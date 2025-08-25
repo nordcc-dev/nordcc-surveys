@@ -1,0 +1,282 @@
+{
+  "templates": [
+    {
+      "id": "customer-satisfaction",
+      "name": "Customer Satisfaction Survey",
+      "description": "Measure customer satisfaction with your product or service",
+      "category": "Business",
+      "icon": "👥",
+      "questions": [
+        {
+          "id": "overall-satisfaction",
+          "type": "rating",
+          "question": "How satisfied are you with our product/service overall?",
+          "required": true,
+          "options": {
+            "scale": 5,
+            "labels": ["Very Dissatisfied", "Dissatisfied", "Neutral", "Satisfied", "Very Satisfied"]
+          }
+        },
+        {
+          "id": "recommendation",
+          "type": "nps",
+          "question": "How likely are you to recommend us to a friend or colleague?",
+          "required": true
+        },
+        {
+          "id": "improvement-areas",
+          "type": "checkbox",
+          "question": "Which areas do you think we could improve? (Select all that apply)",
+          "required": false,
+          "options": {
+            "choices": [
+              "Product Quality",
+              "Customer Service",
+              "Pricing",
+              "Delivery Speed",
+              "Website Experience",
+              "Communication"
+            ]
+          }
+        },
+        {
+          "id": "additional-feedback",
+          "type": "textarea",
+          "question": "Please share any additional feedback or suggestions:",
+          "required": false,
+          "options": {
+            "placeholder": "Your feedback helps us improve..."
+          }
+        }
+      ],
+      "settings": {
+        "allowAnonymous": true,
+        "requireAuth": false,
+        "multipleResponses": false,
+        "showProgressBar": true,
+        "thankYouMessage": "Thank you for your valuable feedback!"
+      }
+    },
+    {
+      "id": "employee-feedback",
+      "name": "Employee Feedback Survey",
+      "description": "Gather feedback from your team members",
+      "category": "HR",
+      "icon": "💼",
+      "questions": [
+        {
+          "id": "job-satisfaction",
+          "type": "scale",
+          "question": "How satisfied are you with your current role?",
+          "required": true,
+          "options": {
+            "min": 1,
+            "max": 10,
+            "minLabel": "Not Satisfied",
+            "maxLabel": "Very Satisfied"
+          }
+        },
+        {
+          "id": "work-environment",
+          "type": "multiple-choice",
+          "question": "How would you describe your work environment?",
+          "required": true,
+          "options": {
+            "choices": [
+              "Excellent - Very supportive and collaborative",
+              "Good - Generally positive atmosphere",
+              "Fair - Some areas need improvement",
+              "Poor - Needs significant changes"
+            ]
+          }
+        },
+        {
+          "id": "career-development",
+          "type": "rating",
+          "question": "How satisfied are you with career development opportunities?",
+          "required": true,
+          "options": {
+            "scale": 5
+          }
+        },
+        {
+          "id": "suggestions",
+          "type": "textarea",
+          "question": "What suggestions do you have for improving our workplace?",
+          "required": false,
+          "options": {
+            "placeholder": "Share your ideas for improvement..."
+          }
+        }
+      ],
+      "settings": {
+        "allowAnonymous": true,
+        "requireAuth": false,
+        "multipleResponses": false,
+        "showProgressBar": true,
+        "thankYouMessage": "Thank you for helping us create a better workplace!"
+      }
+    },
+    {
+      "id": "event-feedback",
+      "name": "Event Feedback Survey",
+      "description": "Collect feedback after events, webinars, or conferences",
+      "category": "Events",
+      "icon": "🎉",
+      "questions": [
+        {
+          "id": "overall-rating",
+          "type": "rating",
+          "question": "How would you rate the event overall?",
+          "required": true,
+          "options": {
+            "scale": 5,
+            "labels": ["Poor", "Fair", "Good", "Very Good", "Excellent"]
+          }
+        },
+        {
+          "id": "most-valuable",
+          "type": "multiple-choice",
+          "question": "What was the most valuable part of the event?",
+          "required": true,
+          "options": {
+            "choices": [
+              "Keynote presentations",
+              "Networking opportunities",
+              "Workshop sessions",
+              "Panel discussions",
+              "Exhibition/vendor area",
+              "Other"
+            ]
+          }
+        },
+        {
+          "id": "likelihood-attend",
+          "type": "scale",
+          "question": "How likely are you to attend future events?",
+          "required": true,
+          "options": {
+            "min": 1,
+            "max": 10,
+            "minLabel": "Very Unlikely",
+            "maxLabel": "Very Likely"
+          }
+        },
+        {
+          "id": "improvements",
+          "type": "textarea",
+          "question": "What could we improve for future events?",
+          "required": false,
+          "options": {
+            "placeholder": "Your suggestions help us plan better events..."
+          }
+        }
+      ],
+      "settings": {
+        "allowAnonymous": true,
+        "requireAuth": false,
+        "multipleResponses": false,
+        "showProgressBar": true,
+        "thankYouMessage": "Thank you for attending and sharing your feedback!"
+      }
+    },
+    {
+      "id": "product-research",
+      "name": "Product Research Survey",
+      "description": "Research customer needs and preferences for product development",
+      "category": "Research",
+      "icon": "🔍",
+      "questions": [
+        {
+          "id": "current-solution",
+          "type": "multiple-choice",
+          "question": "What solution do you currently use for this need?",
+          "required": true,
+          "options": {
+            "choices": [
+              "No current solution",
+              "Manual process",
+              "Competitor A",
+              "Competitor B",
+              "Custom built solution",
+              "Other"
+            ]
+          }
+        },
+        {
+          "id": "pain-points",
+          "type": "checkbox",
+          "question": "What are your biggest pain points? (Select all that apply)",
+          "required": true,
+          "options": {
+            "choices": [
+              "Too expensive",
+              "Too complicated",
+              "Lacks features",
+              "Poor customer support",
+              "Integration issues",
+              "Performance problems"
+            ]
+          }
+        },
+        {
+          "id": "feature-importance",
+          "type": "matrix",
+          "question": "How important are these features to you?",
+          "required": true,
+          "options": {
+            "rows": [
+              "Easy to use interface",
+              "Mobile app",
+              "Integration capabilities",
+              "Advanced analytics",
+              "24/7 support"
+            ],
+            "columns": ["Not Important", "Somewhat Important", "Very Important", "Critical"]
+          }
+        },
+        {
+          "id": "additional-needs",
+          "type": "textarea",
+          "question": "What other features or capabilities would be valuable?",
+          "required": false,
+          "options": {
+            "placeholder": "Describe any additional needs or requirements..."
+          }
+        }
+      ],
+      "settings": {
+        "allowAnonymous": true,
+        "requireAuth": false,
+        "multipleResponses": false,
+        "showProgressBar": true,
+        "thankYouMessage": "Thank you for helping us build better products!"
+      }
+    },
+    {
+      "id": "quick-poll",
+      "name": "Quick Poll",
+      "description": "Simple one-question poll for quick feedback",
+      "category": "General",
+      "icon": "📊",
+      "questions": [
+        {
+          "id": "poll-question",
+          "type": "multiple-choice",
+          "question": "What's your preference?",
+          "required": true,
+          "options": {
+            "choices": ["Option A", "Option B", "Option C", "Other"]
+          }
+        }
+      ],
+      "settings": {
+        "allowAnonymous": true,
+        "requireAuth": false,
+        "multipleResponses": false,
+        "showProgressBar": false,
+        "thankYouMessage": "Thanks for participating in our poll!"
+      }
+    }
+  ]
+}

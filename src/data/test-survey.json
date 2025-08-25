@@ -1,0 +1,111 @@
+{
+    "id": "test-survey",
+    "title": "Netherlands Business Challenges Survey",
+    "description": "Help us understand the biggest challenges facing companies operating in the Netherlands",
+    "settings": {
+      "allowAnonymous": true,
+      "requireEmail": false,
+      "showProgressBar": true,
+      "allowMultipleSubmissions": false
+    },
+    "questions": [
+      {
+        "id": "company-info",
+        "type": "text",
+        "question": "What is your company name?",
+        "required": true,
+        "placeholder": "Enter your company name"
+      },
+      {
+        "id": "company-size",
+        "type": "multiple_choice",
+        "question": "What is the size of your company?",
+        "required": true,
+        "options": ["1-10 employees", "11-50 employees", "51-200 employees", "201-500 employees", "500+ employees"]
+      },
+      {
+        "id": "industry",
+        "type": "multiple_choice",
+        "question": "Which industry does your company operate in?",
+        "required": true,
+        "options": [
+          "Technology",
+          "Finance & Banking",
+          "Healthcare",
+          "Manufacturing",
+          "Retail & E-commerce",
+          "Logistics & Transportation",
+          "Professional Services",
+          "Energy & Utilities",
+          "Agriculture",
+          "Other"
+        ]
+      },
+      {
+        "id": "years-operating",
+        "type": "multiple_choice",
+        "question": "How long has your company been operating in the Netherlands?",
+        "required": true,
+        "options": ["Less than 1 year", "1-3 years", "4-10 years", "11-20 years", "More than 20 years"]
+      },
+      {
+        "id": "biggest-challenges",
+        "type": "checkbox",
+        "question": "What are the biggest challenges your company faces operating in the Netherlands? (Select all that apply)",
+        "required": true,
+        "options": [
+          "High labor costs",
+          "Complex tax regulations",
+          "Difficulty finding skilled workers",
+          "Housing shortage affecting employee recruitment",
+          "Language barriers",
+          "Bureaucracy and administrative burden",
+          "High cost of office space",
+          "Competition for talent",
+          "Environmental regulations compliance",
+          "Digital transformation challenges",
+          "Supply chain disruptions",
+          "Access to funding/investment",
+          "Market saturation",
+          "Cultural differences in business practices"
+        ]
+      },
+      {
+        "id": "challenge-impact",
+        "type": "rating",
+        "question": "On a scale of 1-10, how significantly do these challenges impact your business operations?",
+        "required": true,
+        "scale": 10,
+        "labels": {
+          "1": "No impact",
+          "10": "Severe impact"
+        }
+      },
+      {
+        "id": "government-support",
+        "type": "multiple_choice",
+        "question": "How would you rate the Dutch government's support for businesses?",
+        "required": true,
+        "options": ["Excellent", "Good", "Average", "Poor", "Very Poor"]
+      },
+      {
+        "id": "future-outlook",
+        "type": "rating",
+        "question": "How optimistic are you about your company's future in the Netherlands?",
+        "required": true,
+        "scale": 5,
+        "labels": {
+          "1": "Very pessimistic",
+          "5": "Very optimistic"
+        }
+      },
+      {
+        "id": "additional-comments",
+        "type": "long_text",
+        "question": "Please share any additional comments about the challenges or opportunities for businesses in the Netherlands:",
+        "required": false,
+        "placeholder": "Your thoughts and suggestions..."
+      }
+    ]
+  }
+  
