@@ -76,21 +76,16 @@ export default function HomePage() {
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-muted-foreground">Welcome, {user?.name}</span>
                   {user?.role === "admin" && (
-                    <Button asChild size="sm" variant="outline">
+                    <Button asChild size="sm" variant="outline" className="rounded-full">
                       <Link href="/admin">
                         <Settings className="h-4 w-4 mr-2" />
                         Admin
                       </Link>
                     </Button>
                   )}
-                  <Button asChild size="sm">
-                    <Link href="/admin">
-                      <Plus className="h-4 w-4 mr-2" />
-                      New Survey
-                    </Link>
-                  </Button>
+               
                   <Button variant="ghost" size="sm" onClick={logout}>
-                    <LogOut className="h-4 w-4" />
+                    <LogOut className="h-4 w-4 text-black" />
                   </Button>
                 </div>
               ) : (
@@ -225,7 +220,7 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto">
           <div className="grid gap-8 md:grid-cols-4">
             <div>
-              <h3 className="text-lg font-semibold text-foreground mb-4">NORDCC</h3>
+              <h3 className="text-lg font-semibold text-black mb-4">NORDCC</h3>
               <p className="text-muted-foreground">Survey platform for businesses and research operated by the NORDCC.</p>
             </div>
             {/* <div>
@@ -249,7 +244,7 @@ export default function HomePage() {
               </ul>
             </div> */}
             <div>
-              <h4 className="font-semibold text-foreground mb-4">Support</h4>
+              <h4 className="font-semibold text-black mb-4">Support</h4>
               <ul className="space-y-2 text-muted-foreground">
                 <li>
                   <Link href="/help" className="hover:text-foreground">
@@ -265,7 +260,7 @@ export default function HomePage() {
               </ul>
             </div>
             <div>
-              <h4 className="font-semibold text-foreground mb-4">Legal</h4>
+              <h4 className="font-semibold text-black mb-4">Legal</h4>
               <ul className="space-y-2 text-muted-foreground">
                 <li>
                   <Link href="/privacy" className="hover:text-foreground">
