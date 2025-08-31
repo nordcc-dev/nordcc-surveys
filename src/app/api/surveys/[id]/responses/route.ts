@@ -68,14 +68,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const surveys = await getCollection("surveys")
     const responses = await getCollection("responses")
 
-    // Check if survey exists and is published
+    // Check if survey exists and is published or draft
     const survey = (await surveys.findOne({ _id: new ObjectId(id) })) as Survey | null
 
     if (!survey) {
       return NextResponse.json({ error: "Survey not found" }, { status: 404 })
     }
 
-    if (survey.status !== "published") {
+    if (survey.status !== "published" && survey.status !== "draft") {
       return NextResponse.json({ error: "Survey is not available for responses" }, { status: 400 })
     }
 

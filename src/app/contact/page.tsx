@@ -65,7 +65,7 @@ export default function ContactPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-200 to-white">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white">
       <div className="container mx-auto px-4 py-12">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
@@ -76,7 +76,7 @@ export default function ContactPage() {
           <div className="grid lg:grid-cols-2 gap-12">
             {/* Contact Information */}
             <div className="space-y-8">
-              <Card className="border-blue-200">
+              <Card className="border-black shadow-lg">
                 <CardHeader>
                   <CardTitle className="text-blue-700 text-xl flex items-center gap-2">
                   
@@ -106,7 +106,7 @@ export default function ContactPage() {
                 </CardContent>
               </Card>
 
-              <Card className="border-red-200">
+              <Card className="border-black shadow-lg">
                 <CardHeader>
                   <CardTitle className="text-red-700 text-xl">Business Hours</CardTitle>
                 </CardHeader>
@@ -127,9 +127,9 @@ export default function ContactPage() {
             </div>
 
             {/* Contact Form */}
-            <Card className="border-blue-200">
-              <CardHeader>
-                <CardTitle className="text-blue-700 text-xl">Send us a Message</CardTitle>
+            <Card className="border-black shadow-lg">
+              <CardHeader >
+                <CardTitle className="text-blue-700 text-2xl">Send us a Message</CardTitle>
                 <CardDescription>Fill out the form below and we&apos;ll get back to you within 24 hours.</CardDescription>
               </CardHeader>
               <CardContent>
@@ -221,7 +221,7 @@ export default function ContactPage() {
                   <Button
                     type="submit"
                     disabled={isSubmitting}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-full"
                   >
                     {isSubmitting ? (
                       <>

@@ -23,6 +23,7 @@ export interface Survey {
   createdAt: Date
   updatedAt: Date
   responseCount: number
+  name?: string
 }
 
 // Question types
@@ -46,8 +47,10 @@ export interface Question {
     | "matrix"
   title: string
   description?: string
+  question: string
   required: boolean
-  options?: string[] // For multiple choice, checkbox, dropdown
+  options?: string[] | { choices: string[]; placeholder?: string }
+ // For multiple choice, checkbox, dropdown
   settings?: {
     min?: number
     max?: number
@@ -57,6 +60,7 @@ export interface Question {
     rows?: string[]
     columns?: string[]
   }
+  name?: string
 }
 
 // Survey settings

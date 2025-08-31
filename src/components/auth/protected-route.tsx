@@ -1,9 +1,9 @@
 "use client"
 
 import type React from "react"
-
-import { useEffect, useState } from "react"
+import { useAuth } from "./auth-provider"
 import { useRouter } from "next/navigation"
+import { useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Lock } from "lucide-react"
 
@@ -14,30 +14,21 @@ interface ProtectedRouteProps {
 
 export default function ProtectedRoute({ children, requiredRole = "user" }: ProtectedRouteProps) {
   const router = useRouter()
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
-  const [, setUserRole] = useState<string | null>(null)
+  const { user, isLoading, isAuthenticated } = useAuth()
 
   useEffect(() => {
-    // Check authentication status
-    const token = localStorage.getItem("auth_token")
-    const role = localStorage.getItem("user_role")
-
-    if (!token) {
+    if (!isLoading && !isAuthenticated) {
       router.push("/auth/login")
       return
     }
 
-    setUserRole(role)
-    setIsAuthenticated(true)
-
-    // Check role permissions
-    if (requiredRole === "admin" && role !== "admin") {
+    if (!isLoading && isAuthenticated && requiredRole === "admin" && user?.role !== "admin") {
       router.push("/unauthorized")
       return
     }
-  }, [router, requiredRole])
+  }, [router, requiredRole, isLoading, isAuthenticated, user])
 
-  if (isAuthenticated === null) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Card className="w-full max-w-md text-center">
@@ -64,5 +55,21 @@ export default function ProtectedRoute({ children, requiredRole = "user" }: Prot
     )
   }
 
+  if (requiredRole === "admin" && user?.role !== "admin") {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Card className="w-full max-w-md text-center">
+          <CardContent className="pt-6">
+            <Lock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h1 className="text-xl font-semibold mb-2">Access Denied</h1>
+            <p className="text-muted-foreground">You need admin privileges to access this page.</p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   return <>{children}</>
 }
+
+export { ProtectedRoute }

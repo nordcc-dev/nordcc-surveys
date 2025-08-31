@@ -7,7 +7,7 @@ import type { User } from "@/lib/db-models"
 export async function GET(request: NextRequest) {
   try {
     const token = request.headers.get("authorization")?.replace("Bearer ", "")
-
+    
     if (!token) {
       return NextResponse.json({ error: "No token provided" }, { status: 401 })
     }

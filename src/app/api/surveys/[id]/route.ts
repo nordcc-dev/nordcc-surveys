@@ -31,7 +31,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     // Return public survey data (for taking surveys)
-    if (survey.status !== "published") {
+    if (survey.status !== "published" && survey.status !== "draft") {
       return NextResponse.json({ error: "Survey not available" }, { status: 404 })
     }
 

@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge"
 import { Star, ChevronLeft, ChevronRight, AlertCircle, Send } from "lucide-react"
 import { useParams } from "next/navigation"
 import type { Question, SurveySettings, ResponseValue } from "@/lib/db-models"
+import { useRouter } from "next/navigation"   // ✅ import router
 
 interface Survey {
   id: string
@@ -37,6 +38,7 @@ export default function TakeSurvey() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const router = useRouter()
 
   const fetchSurvey = useCallback(async () => {
     try {
@@ -48,7 +50,7 @@ export default function TakeSurvey() {
 
       if (response.ok) {
         const data = await response.json()
-        if (data.success) {
+        if (data.survey) {
           setSurvey(data.survey)
           return
         }
@@ -160,23 +162,28 @@ export default function TakeSurvey() {
 
     setIsSubmitting(true)
     try {
-      // Submit response to API
+      const responseData: Record<string, ResponseValue> = {}
+      responses.forEach((response) => {
+        responseData[response.questionId] = response.value
+      })
+
       const response = await fetch(`/api/surveys/${params.id}/responses`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          responses: responses,
-          surveyId: params.id,
-          isTemplate: !survey?.questions[0].title, // Simple check to determine if it's from template
+          responses: responseData,
+          startTime: new Date().toISOString(),
         }),
       })
 
       if (response.ok) {
         setIsSubmitted(true)
+        alert("✅ Thank you! Your survey was submitted successfully.") // ✅ popup
+        router.push("/completed") // ✅ redirect
       } else {
-        throw new Error("Failed to submit survey")
+        const errorData = await response.json()
+        console.error("API Error:", errorData)
+        throw new Error(errorData.error || "Failed to submit survey")
       }
     } catch (error) {
       console.error("Failed to submit survey:", error)
@@ -191,7 +198,24 @@ export default function TakeSurvey() {
     const error = errors[question.id]
 
     // Handle both template and database question structures
-    const questionOptions = question.options || []
+    type ChoicesObject = { choices: string[] };
+
+    function isChoicesObject(v: unknown): v is ChoicesObject {
+      return !!v
+        && typeof v === "object"
+        && "choices" in (v as Record<string, unknown>)
+        && Array.isArray((v as Record<string, unknown>).choices);
+    }
+
+    const opts: unknown = question.options;
+
+    const questionOptions: string[] =
+      Array.isArray(opts)
+        ? opts
+        : isChoicesObject(opts)
+          ? opts.choices
+          : [];
+
 
     switch (question.type) {
       case "text":
@@ -204,6 +228,7 @@ export default function TakeSurvey() {
               onChange={(e) => updateResponse(question.id, e.target.value)}
               placeholder={question.type === "email" ? "your@email.com" : "Your answer"}
               className={error ? "border-destructive" : ""}
+              maxLength={150}
             />
             {error && (
               <div className="flex items-center gap-2 text-destructive text-sm">
@@ -223,6 +248,7 @@ export default function TakeSurvey() {
               placeholder="Your answer"
               rows={4}
               className={error ? "border-destructive" : ""}
+              maxLength={700}
             />
             {error && (
               <div className="flex items-center gap-2 text-destructive text-sm">
@@ -303,9 +329,8 @@ export default function TakeSurvey() {
                   className="p-2 rounded-lg hover:bg-muted transition-colors"
                 >
                   <Star
-                    className={`h-8 w-8 ${
-                      (response as number) >= rating ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"
-                    }`}
+                    className={`h-8 w-8 ${(response as number) >= rating ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"
+                      }`}
                   />
                 </button>
               ))}
@@ -339,11 +364,10 @@ export default function TakeSurvey() {
                   key={score}
                   type="button"
                   onClick={() => updateResponse(question.id, score)}
-                  className={`p-3 text-sm font-medium rounded-lg border transition-colors ${
-                    (response as number) === score
+                  className={`p-3 text-sm font-medium rounded-lg border transition-colors ${(response as number) === score
                       ? "bg-primary text-primary-foreground border-primary"
                       : "hover:bg-muted border-border"
-                  }`}
+                    }`}
                 >
                   {score}
                 </button>
@@ -371,11 +395,10 @@ export default function TakeSurvey() {
                   key={score}
                   type="button"
                   onClick={() => updateResponse(question.id, score)}
-                  className={`p-3 text-sm font-medium rounded-lg border transition-colors ${
-                    (response as number) === score
+                  className={`p-3 text-sm font-medium rounded-lg border transition-colors ${(response as number) === score
                       ? "bg-primary text-primary-foreground border-primary"
                       : "hover:bg-muted border-border"
-                  }`}
+                    }`}
                 >
                   {score}
                 </button>
@@ -393,6 +416,61 @@ export default function TakeSurvey() {
             )}
           </div>
         )
+
+        case "dropdown":
+          return (
+            <div className="space-y-2">
+              <select
+                className={`w-full rounded-md border px-3 py-2 bg-background ${error ? "border-destructive" : "border-input"}`}
+                value={(response as string) ?? ""}
+                onChange={(e) => updateResponse(question.id, e.target.value)}
+              >
+                <option value="" disabled>
+                  Select an option…
+                </option>
+                {questionOptions.map((option: string, idx: number) => (
+                  <option key={idx} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+        
+              {error && (
+                <div className="flex items-center gap-2 text-destructive text-sm">
+                  <AlertCircle className="h-4 w-4" />
+                  {error}
+                </div>
+              )}
+            </div>
+          )
+        
+        case "number":
+          return (
+            <div className="space-y-2">
+              <Input
+                type="number"
+                value={typeof response === "number" ? response : (response as string) ?? ""}
+                onChange={(e) => {
+                  const val = e.target.value
+                  // empty → allow clearing; otherwise parse to number
+                  updateResponse(question.id, val === "" ? "" : Number(val))
+                }}
+                min={question.settings?.min}
+                max={question.settings?.max}
+                step={question.settings?.step ?? 1}
+                className={error ? "border-destructive" : ""}
+                placeholder="Enter a number"
+              />
+        
+              {error && (
+                <div className="flex items-center gap-2 text-destructive text-sm">
+                  <AlertCircle className="h-4 w-4" />
+                  {error}
+                </div>
+              )}
+            </div>
+          )
+        
 
       default:
         return <div>Unsupported question type: {question.type}</div>
@@ -460,19 +538,33 @@ export default function TakeSurvey() {
       <main className="max-w-2xl mx-auto p-6">
         <Card>
           <CardHeader>
+
             <div className="flex items-start justify-between">
+
               <div className="flex-1">
-                <CardTitle className="text-xl mb-2">
+
+                <CardTitle className="text-xl mb-8">
+
                   {currentQuestion?.title}
+
                   {currentQuestion?.required && (
-                    <Badge variant="secondary" className="ml-2 text-xs">
+
+                    <Badge variant="secondary" className="ml-2 text-xs rounded-full">
+
                       Required
+
                     </Badge>
+
                   )}
+
                 </CardTitle>
-                {currentQuestion?.description && <p className="text-muted-foreground">{currentQuestion.description}</p>}
+
+                {currentQuestion?.question && <p className="text-black font-bold text-lg">{currentQuestion.question}</p>}
+
               </div>
+
             </div>
+
           </CardHeader>
           <CardContent>
             <div className="mb-8">{currentQuestion && renderQuestion(currentQuestion)}</div>
@@ -485,7 +577,7 @@ export default function TakeSurvey() {
               </Button>
 
               {currentQuestionIndex === (survey?.questions.length || 0) - 1 ? (
-                <Button onClick={handleSubmit} disabled={isSubmitting} className="bg-primary hover:bg-primary/90">
+                <Button onClick={handleSubmit} disabled={isSubmitting} className="bg-primary hover:bg-primary/90 text-white">
                   {isSubmitting ? (
                     <>
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
