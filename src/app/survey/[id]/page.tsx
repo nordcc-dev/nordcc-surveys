@@ -14,7 +14,7 @@ import { Star, ChevronLeft, ChevronRight, AlertCircle, Send } from "lucide-react
 import { useParams } from "next/navigation"
 import type { Question, SurveySettings, ResponseValue } from "@/lib/db-models"
 import { useRouter } from "next/navigation"   // ✅ import router
-
+import Image from "next/image"
 interface Survey {
   id: string
   title: string
@@ -350,73 +350,112 @@ export default function TakeSurvey() {
           </div>
         )
 
-      case "scale":
-        const min = question.settings?.min || 1
-        const max = question.settings?.max || 10
-        const scaleLabels = question.settings?.labels || []
-        const minLabel = scaleLabels[0] || "Low"
-        const maxLabel = scaleLabels[scaleLabels.length - 1] || "High"
-        return (
-          <div className="space-y-3">
-            <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${max - min + 1}, 1fr)` }}>
-              {Array.from({ length: max - min + 1 }, (_, i) => min + i).map((score) => (
-                <button
-                  key={score}
-                  type="button"
-                  onClick={() => updateResponse(question.id, score)}
-                  className={`p-3 text-sm font-medium rounded-lg border transition-colors ${(response as number) === score
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "hover:bg-muted border-border"
-                    }`}
-                >
-                  {score}
-                </button>
-              ))}
-            </div>
-            <div className="flex justify-between text-sm text-muted-foreground">
-              <span>{minLabel}</span>
-              <span>{maxLabel}</span>
-            </div>
-            {error && (
-              <div className="flex items-center gap-2 text-destructive text-sm">
-                <AlertCircle className="h-4 w-4" />
-                {error}
+        case "scale": {
+          const min = question.settings?.min ?? 1
+          const max = question.settings?.max ?? 10
+          const scaleLabels = question.settings?.labels ?? []
+          const minLabel = scaleLabels[0] || "Low"
+          const maxLabel = scaleLabels[scaleLabels.length - 1] || "High"
+          const values = Array.from({ length: max - min + 1 }, (_, i) => min + i)
+        
+          return (
+            <div className="space-y-3">
+              {/* Mobile: wraps automatically; Desktop: fixed columns */}
+              <div
+                className={`
+                  grid gap-2
+                  [grid-template-columns:repeat(auto-fit,minmax(2.75rem,1fr))]
+                  sm:[grid-template-columns:repeat(${values.length},minmax(0,1fr))]
+                `}
+              >
+                {values.map((score) => {
+                  const active = (response as number) === score
+                  return (
+                    <button
+                      key={score}
+                      type="button"
+                      onClick={() => updateResponse(question.id, score)}
+                      aria-pressed={active}
+                      className={[
+                        "w-full p-3 rounded-lg border text-sm font-medium transition-colors",
+                        "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                        active
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "hover:bg-muted border-border"
+                      ].join(" ")}
+                    >
+                      {score}
+                    </button>
+                  )
+                })}
               </div>
-            )}
-          </div>
-        )
-
-      case "nps":
-        return (
-          <div className="space-y-3">
-            <div className="grid grid-cols-11 gap-1">
-              {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((score) => (
-                <button
-                  key={score}
-                  type="button"
-                  onClick={() => updateResponse(question.id, score)}
-                  className={`p-3 text-sm font-medium rounded-lg border transition-colors ${(response as number) === score
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "hover:bg-muted border-border"
-                    }`}
-                >
-                  {score}
-                </button>
-              ))}
-            </div>
-            <div className="flex justify-between text-sm text-muted-foreground">
-              <span>Not at all likely</span>
-              <span>Extremely likely</span>
-            </div>
-            {error && (
-              <div className="flex items-center gap-2 text-destructive text-sm">
-                <AlertCircle className="h-4 w-4" />
-                {error}
+        
+              <div className="flex justify-between text-xs sm:text-sm text-muted-foreground px-0.5">
+                <span>{minLabel}</span>
+                <span>{maxLabel}</span>
               </div>
-            )}
-          </div>
-        )
+        
+              {error && (
+                <div className="flex items-center gap-2 text-destructive text-sm">
+                  <AlertCircle className="h-4 w-4" />
+                  {error}
+                </div>
+              )}
+            </div>
+          )
+        }
+        
 
+        case "nps": {
+          const values = Array.from({ length: 11 }, (_, i) => i)
+        
+          return (
+            <div className="space-y-3">
+              {/* Mobile: wraps automatically; >=sm: 11 equal-width columns */}
+              <div
+                className={`
+                  grid gap-2
+                  [grid-template-columns:repeat(auto-fit,minmax(2.75rem,1fr))]
+                  sm:[grid-template-columns:repeat(${values.length},minmax(0,1fr))]
+                `}
+              >
+                {values.map((score) => {
+                  const active = (response as number) === score
+                  return (
+                    <button
+                      key={score}
+                      type="button"
+                      onClick={() => updateResponse(question.id, score)}
+                      aria-pressed={active}
+                      className={[
+                        "w-full p-3 rounded-lg border text-sm font-medium transition-colors",
+                        "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                        active
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "hover:bg-muted border-border",
+                      ].join(" ")}
+                    >
+                      {score}
+                    </button>
+                  )
+                })}
+              </div>
+        
+              <div className="flex justify-between text-xs sm:text-sm text-muted-foreground px-0.5">
+                <span>Not at all likely</span>
+                <span>Extremely likely</span>
+              </div>
+        
+              {error && (
+                <div className="flex items-center gap-2 text-destructive text-sm">
+                  <AlertCircle className="h-4 w-4" />
+                  {error}
+                </div>
+              )}
+            </div>
+          )
+        }
+        
         case "dropdown":
           return (
             <div className="space-y-2">
@@ -514,13 +553,34 @@ export default function TakeSurvey() {
     )
   }
 
+
+  function SurveyFooter() {
+    return (
+      <footer className="border-t bg-card/50">
+        <div className="max-w-4xl mx-auto px-4 py-4">
+          <div className="flex flex-col items-center justify-center gap-2 text-center">
+            <Image
+              src="/media/logo.jpg"
+              alt="Survey logo"
+              width={96}
+              height={96}
+              className="h-10 w-auto object-contain"
+            />
+            
+          </div>
+        </div>
+      </footer>
+    )
+  }
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
+    <div className="min-h-screen bg-background flex flex-col">
+      {/* Header (no logo) */}
       <header className="border-b bg-card">
         <div className="max-w-4xl mx-auto px-4 py-6">
-          <div className="text-center">
-            <h1 className="text-3xl font-bold text-foreground mb-2">{survey.title}</h1>
+          <div className="flex flex-col items-center text-center">
+            <h1 className="text-3xl font-bold text-foreground mb-2">
+              {survey.title}
+            </h1>
             <p className="text-muted-foreground mb-4">{survey.description}</p>
             {survey.settings?.showProgressBar !== false && (
               <div className="flex items-center justify-center gap-4">
@@ -534,72 +594,79 @@ export default function TakeSurvey() {
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="max-w-2xl mx-auto p-6">
-        <Card>
-          <CardHeader>
-
-            <div className="flex items-start justify-between">
-
-              <div className="flex-1">
-
-                <CardTitle className="text-xl mb-8">
-
-                  {currentQuestion?.title}
-
-                  {currentQuestion?.required && (
-
-                    <Badge variant="secondary" className="ml-2 text-xs rounded-full">
-
-                      Required
-
-                    </Badge>
-
+      {/* Main Content (stays centered) */}
+      <main className="flex-1">
+        <div className="max-w-2xl mx-auto p-6">
+          <Card>
+            <CardHeader>
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <CardTitle className="text-xl mb-8">
+                    {currentQuestion?.title}
+                    {currentQuestion?.required && (
+                      <Badge variant="secondary" className="ml-2 text-xs rounded-full">
+                        Required
+                      </Badge>
+                    )}
+                  </CardTitle>
+                  {currentQuestion?.question && (
+                    <p className="text-black font-bold text-xl">
+                      {currentQuestion.question}
+                    </p>
                   )}
+                </div>
+              </div>
+            </CardHeader>
 
-                </CardTitle>
-
-                {currentQuestion?.question && <p className="text-black font-bold text-lg">{currentQuestion.question}</p>}
-
+            <CardContent>
+              <div className="mb-8">
+                {currentQuestion && renderQuestion(currentQuestion)}
               </div>
 
-            </div>
-
-          </CardHeader>
-          <CardContent>
-            <div className="mb-8">{currentQuestion && renderQuestion(currentQuestion)}</div>
-
-            {/* Navigation */}
-            <div className="flex justify-between">
-              <Button variant="outline" onClick={handlePrevious} disabled={currentQuestionIndex === 0}>
-                <ChevronLeft className="h-4 w-4 mr-2" />
-                Previous
-              </Button>
-
-              {currentQuestionIndex === (survey?.questions.length || 0) - 1 ? (
-                <Button onClick={handleSubmit} disabled={isSubmitting} className="bg-primary hover:bg-primary/90 text-white">
-                  {isSubmitting ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Submitting...
-                    </>
-                  ) : (
-                    <>
-                      <Send className="h-4 w-4 mr-2" />
-                      Submit Survey
-                    </>
-                  )}
+              {/* Navigation */}
+              <div className="flex justify-between">
+                <Button
+                  variant="outline"
+                  onClick={handlePrevious}
+                  disabled={currentQuestionIndex === 0}
+                  className="rounded-full"
+                >
+                  <ChevronLeft className="h-4 w-4 mr-2" />
+                  Previous
                 </Button>
-              ) : (
-                <Button onClick={handleNext} className="bg-primary hover:bg-primary/90">
-                  Next
-                  <ChevronRight className="h-4 w-4 ml-2" />
-                </Button>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+
+                {currentQuestionIndex === (survey?.questions.length || 0) - 1 ? (
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={isSubmitting}
+                    className="bg-primary hover:bg-primary/90 text-white"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Submitting...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="h-4 w-4 mr-2" />
+                        Submit Survey
+                      </>
+                    )}
+                  </Button>
+                ) : (
+                  <Button onClick={handleNext} className="bg-primary hover:bg-primary/90 text-white rounded-full">
+                    Next
+                    <ChevronRight className="h-4 w-4 ml-2" />
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </main>
+
+      {/* Footer with centered logo */}
+      <SurveyFooter />
     </div>
   )
 }

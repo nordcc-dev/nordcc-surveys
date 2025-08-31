@@ -95,10 +95,10 @@ export default function HomePage() {
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
-                  <Button asChild size="sm" className="rounded-full bg-secondary hover:bg-secondary/70">
+                  <Button asChild size="sm" className="rounded-full bg-secondary hover:bg-secondary/70 text-white">
                     <Link href="/auth/login">Sign In</Link>
                   </Button>
-                  <Button asChild size="sm" className="bg-primary hover:bg-primary/70 rounded-full">
+                  <Button asChild size="sm" className="bg-primary hover:bg-primary/70 rounded-full text-white">
                     <Link href="/auth/signup">Get Started</Link>
                   </Button>
                 </div>
