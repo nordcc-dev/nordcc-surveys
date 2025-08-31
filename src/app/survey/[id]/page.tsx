@@ -573,12 +573,12 @@ export default function TakeSurvey() {
     )
   }
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col bg-white">
       {/* Header (no logo) */}
       <header className="border-b bg-card">
         <div className="max-w-4xl mx-auto px-4 py-6">
           <div className="flex flex-col items-center text-center">
-            <h1 className="text-3xl font-bold text-foreground mb-2">
+            <h1 className="text-3xl font-bold text-black mb-2">
               {survey.title}
             </h1>
             <p className="text-muted-foreground mb-4">{survey.description}</p>
@@ -629,7 +629,7 @@ export default function TakeSurvey() {
                   variant="outline"
                   onClick={handlePrevious}
                   disabled={currentQuestionIndex === 0}
-                  className="rounded-full"
+                  className="rounded-full bg-white"
                 >
                   <ChevronLeft className="h-4 w-4 mr-2" />
                   Previous
