@@ -277,6 +277,144 @@
         "showProgressBar": false,
         "thankYouMessage": "Thanks for participating in our poll!"
       }
+    },
+    {
+      "id": "norwegian-firms-netherlands-barriers",
+      "name": "Survey on Challenges for Norwegian Firms in the Netherlands",
+      "description": "This survey aims to identify the main obstacles Norwegian firms face when doing business in the Netherlands, including trade barriers, cultural differences, and resource needs.",
+      "category": "International Business",
+      "icon": "🌍",
+      "questions": [
+        {
+          "id": "company-name",
+          "type": "text",
+          "question": "What is the name of your company?",
+          "required": true,
+          "options": {
+            "placeholder": "Enter your company name"
+          }
+        },
+        {
+          "id": "export-obstacles",
+          "type": "checkbox",
+          "question": "What are the biggest obstacles your company faces when operating in or exporting to the Netherlands? (Select all that apply)",
+          "required": true,
+          "options": {
+            "choices": [
+              "Regulatory differences",
+              "Cultural differences",
+              "Language barriers",
+              "Logistical challenges",
+              "Market entry difficulties",
+              "Competition from local firms",
+              "Other (please specify)"
+            ]
+          }
+        },
+        {
+          "id": "examples-barriers",
+          "type": "textarea",
+          "question": "Can you share specific examples of when your company faced such barriers?",
+          "required": false,
+          "options": {
+            "placeholder": "Describe a real-world example..."
+          }
+        },
+        {
+          "id": "strategies-overcome",
+          "type": "textarea",
+          "question": "What strategies or approaches have helped your company overcome these challenges?",
+          "required": false,
+          "options": {
+            "placeholder": "Explain any strategies or best practices..."
+          }
+        },
+        {
+          "id": "tools-resources",
+          "type": "rating",
+          "question": "Does your company currently have the necessary tools and resources to overcome these barriers?",
+          "required": true,
+          "options": {
+            "scale": 5,
+            "labels": [
+              "Strongly Disagree",
+              "Disagree",
+              "Neutral",
+              "Agree",
+              "Strongly Agree"
+            ]
+          }
+        },
+        {
+          "id": "government-support",
+          "type": "rating",
+          "question": "How effective has government or trade organization support (e.g., Innovation Norway, chambers of commerce) been in helping you address these challenges?",
+          "required": false,
+          "options": {
+            "scale": 5,
+            "labels": [
+              "Very Ineffective",
+              "Ineffective",
+              "Neutral",
+              "Effective",
+              "Very Effective"
+            ]
+          }
+        },
+        {
+          "id": "nps-recommendation",
+          "type": "nps",
+          "question": "How likely are you to recommend the Netherlands as a business destination to other Norwegian firms?",
+          "required": true
+        },
+        {
+          "id": "future-outlook",
+          "type": "select",
+          "question": "Looking ahead, how do you expect the business environment in the Netherlands to change for your company?",
+          "required": true,
+          "options": {
+            "choices": [
+              "More favorable",
+              "No significant change",
+              "More challenging",
+              "Uncertain"
+            ]
+          }
+        },
+        {
+          "id": "cultural-impact",
+          "type": "rating",
+          "question": "To what extent do cultural or language differences impact your company’s ability to operate effectively in the Netherlands?",
+          "required": true,
+          "options": {
+            "scale": 5,
+            "labels": [
+              "Not at all",
+              "Slightly",
+              "Moderately",
+              "Significantly",
+              "Extremely"
+            ]
+          }
+        },
+        {
+          "id": "additional-feedback",
+          "type": "textarea",
+          "question": "Please share any additional feedback, suggestions, or insights about operating in the Netherlands.",
+          "required": false,
+          "options": {
+            "placeholder": "Your feedback helps us understand your perspective..."
+          }
+        }
+      ],
+      "settings": {
+        "allowAnonymous": false,
+        "requireAuth": false,
+        "multipleResponses": false,
+        "showProgressBar": true,
+        "thankYouMessage": "Thank you for sharing your experiences. Your input helps us better understand the challenges and opportunities for Norwegian firms in the Netherlands."
+      }
     }
+    
   ]
 }
