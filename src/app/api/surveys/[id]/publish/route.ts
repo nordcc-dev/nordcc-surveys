@@ -5,6 +5,7 @@ import { ObjectId } from "mongodb"
 import type { Survey } from "@/lib/db-models"
 
 // POST /api/surveys/[id]/publish - Publish/unpublish survey
+
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params

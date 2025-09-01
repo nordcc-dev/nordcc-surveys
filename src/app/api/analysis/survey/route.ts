@@ -33,6 +33,7 @@ Write clearly for non-technical stakeholders.`
 
   const meta = `
 Survey:
+
 - Title: ${s.surveyTitle ?? "N/A"}
 - Name (user-provided): ${s.name ?? "N/A"}
 - Description: ${s.surveyDescription ?? "N/A"}
