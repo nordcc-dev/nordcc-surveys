@@ -38,31 +38,35 @@ export function UseTemplateButton({ templateId, defaultName, className }: UseTem
     const [error, setError] = useState<string | null>(null)
     const router = useRouter()
 
-    const handleCreateFromTemplate = async (templateId: string, surveyName: string) => {
-        try {
-          const token = localStorage.getItem("auth_token")
-          if (!token) throw new Error("No authentication token found")
-      
-          const res = await fetch("/api/surveys/from-template", {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ templateId, name: surveyName }), // <-- send name
-          })
-      
-          if (!res.ok) {
-            const j = await res.json().catch(() => ({}))
-            throw new Error(j?.error || `Request failed: ${res.status}`)
-          }
-      
-          alert("✅ Survey Was Created ✅")
-          router.push(`/admin/surveys`)
-        } catch (e) {
-          console.error("Error creating survey from template:", e)
-        }
+    // UseTemplateButton.tsx
+
+const handleCreateFromTemplate = async (templateId: string, surveyName: string) => {
+    try {
+      const token = localStorage.getItem("auth_token")
+      if (!token) throw new Error("No authentication token found")
+  
+      const res = await fetch("/api/surveys/from-template", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        // ⬇️ Send `title`, not `name`
+        body: JSON.stringify({ templateId, title: surveyName }),
+      })
+  
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}))
+        throw new Error(j?.error || `Request failed: ${res.status}`)
       }
+  
+      alert("✅ Survey Was Created ✅")
+      router.push(`/admin/surveys`)
+    } catch (e) {
+      console.error("Error creating survey from template:", e)
+    }
+  }
+  
       
 
     async function onConfirm() {

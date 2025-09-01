@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 // import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 // import { Badge } from "@/components/ui/badge"
 import { useAuth } from "@/components/auth/auth-provider"
-import {  LogOut, Settings, Plus } from "lucide-react"
+import {  LogOut, Settings } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 

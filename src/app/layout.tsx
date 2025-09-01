@@ -4,11 +4,12 @@ import { GeistSans } from "geist/font/sans"
 import { GeistMono } from "geist/font/mono"
 import { AuthProvider } from "@/components/auth/auth-provider"
 import "./globals.css"
+import { Analytics } from "@vercel/analytics/next"
 
 export const metadata: Metadata = {
-  title: "SurveyBuilder - Professional Survey Platform",
-  description: "Create, manage, and analyze surveys with our comprehensive platform",
-  generator: "v0.app",
+  title: "NORDCC Surveys - Survey Platform operated by the NORDCC",
+  description: "Surveys created by the NORDCC for businesses operating in the Netherlands",
+
 }
 
 export default function RootLayout({
@@ -28,7 +29,10 @@ html {
         `}</style>
       </head>
       <body>
+
+        <Analytics/>
         <AuthProvider>{children}</AuthProvider>
+       
       </body>
     </html>
   )

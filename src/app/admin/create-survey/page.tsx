@@ -105,13 +105,13 @@ function CreateSurveyPage() {
         }
 
         alert("✅ Survey created from template")
-        // e.g. router.push(`/surveys/${payload.survey._id}`)
+       router.push(`/admin/surveys`)
       } catch (e) {
         console.error("[CreateSurvey] Error creating survey from template:", e)
         alert("Failed to create survey from template")
       }
     },
-    []
+    [router]
   )
 
 
@@ -132,8 +132,9 @@ function CreateSurveyPage() {
 
         const transformedTemplates: Template[] = templatesArray.map((template: unknown) => {
           const t = template as Record<string, unknown>
+          console.log(t)
           return {
-            id: String(t.id || Math.random().toString(36)),
+            id: String(t.id),
             title: String(t.name || t.title || "Untitled Template"),
             description: String(t.description || "No description available"),
             category: String(t.category || "General"),
@@ -143,6 +144,7 @@ function CreateSurveyPage() {
             questions: Array.isArray(t.questions) ? t.questions : [],
           }
         })
+        
 
         console.log("[CreateSurvey] Static templates loaded:", transformedTemplates.length)
         setTemplates(transformedTemplates)
