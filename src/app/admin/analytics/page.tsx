@@ -16,7 +16,8 @@ import {
   type QuestionType,
 } from "@/components/surveys/question-type"
 import { topNWordsFrom, averageWordLengthFrom } from "@/components/analyzer/AnalyzingLogic"
-
+import { DownloadCsvButton, type MinimalSurveyResponse } from "@/components/analyzer/CsvDownload"
+import type { SurveyResponse, ResponseValue } from "@/lib/db-models"
 
 interface QuestionAnalytics {
   questionId: string
@@ -87,7 +88,7 @@ export default function AnalyticsPage() {
     } finally {
       setLoading(false)
     }
-  }, []) // no changing deps
+  }, [])
 
   useEffect(() => {
     fetchAnalytics()
@@ -100,10 +101,9 @@ export default function AnalyticsPage() {
     }
   }, [data, selectedSurveyId])
 
-
+  // (Optional extra fetch — if you keep it, it's harmless but redundant)
   useEffect(() => {
     fetchAnalytics()
-
   }, [fetchAnalytics])
 
   const selectedSurvey: SurveyAnalytics | undefined = useMemo(
@@ -111,8 +111,28 @@ export default function AnalyticsPage() {
     [data, selectedSurveyId]
   )
 
+  // Map your DB SurveyResponse[] -> MinimalSurveyResponse[] for the CSV button
+  const responsesForCsv: MinimalSurveyResponse[] = useMemo(() => {
+    if (!selectedSurvey?.responses) return []
+    // We only pick fields needed for CSV; surveyId/ObjectId is intentionally dropped
+    const typed = selectedSurvey.responses as unknown as SurveyResponse[]
+    return typed.map((r) => ({
+      responses: r.responses as Record<string, ResponseValue>,
+      metadata: {
+        ipAddress: r.metadata?.ipAddress,
+        userAgent: r.metadata?.userAgent,
+        startTime: r.metadata?.startTime ? new Date(r.metadata.startTime).toISOString() : undefined,
+        endTime: r.metadata?.endTime ? new Date(r.metadata.endTime).toISOString() : undefined,
+        isComplete: r.metadata?.isComplete,
+      },
+      respondentInfo: r.respondentInfo
+        ? { email: r.respondentInfo.email, name: r.respondentInfo.name }
+        : undefined,
+      createdAt: r.createdAt ? new Date(r.createdAt).toISOString() : undefined,
+    }))
+  }, [selectedSurvey])
+
   const renderQuestionAnalytics = (question: QuestionAnalytics) => {
-    // derive scale/labels from the standardized type
     const inferredScale = convertQuestionTypeToScale(
       question.questionType as QuestionType
     )
@@ -130,252 +150,237 @@ export default function AnalyticsPage() {
 
     return (
       <CardContent>
-      {(() => {
-        const qTitle =
-          question.questionTitle
-        
-    
-        const isTextual =
-          question.questionType === "text" || question.questionType === "textarea"
-    
-        const textAnswerCounts: Record<string, number> =
-          (question.distribution as Record<string, number>) ??
-          (distributionData.length
-            ? Object.fromEntries(
-                distributionData.map((d) => [String(d.name), Number(d.value) || 0])
-              )
-            : {})
-    
-        return (
-          <section className="space-y-4 rounded-xl border p-5 bg-card/40">
-            {/* Question heading */}
-            <div className="flex items-start justify-between gap-4">
-              <h3 className="text-2xl font-semibold leading-snug">{qTitle}</h3>
-              <div className="shrink-0 text-right">
-                <Badge variant="outline" className="mr-2 rounded-full">
-                  {question.questionType}
-                </Badge>
-                <span className="text-sm text-muted-foreground">
-                  {question.totalResponses} responses
-                </span>
-              </div>
-            </div>
-    
-            <div className="border-t" />
-    
-            {isTextual ? (
-              <>
-                {/* Top words + avg length */}
-                <div className="mb-4 p-6 bg-muted rounded-xl shadow-sm">
-  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-    {/* Most Used Words */}
-    <div className="p-4 bg-background rounded-lg border border-border">
-      <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-        3 Most Used Words
-      </p>
-      {topNWordsFrom(textAnswerCounts, 3).length > 0 ? (
-        <ul className="mt-3 space-y-2 text-sm">
-          {topNWordsFrom(textAnswerCounts, 3).map(({ word, count }) => (
-            <li
-              key={`${question.questionId}-word-${word}`}
-              className="flex items-center justify-between border-b border-border pb-1 last:border-0 last:pb-0"
-            >
-              <span className="font-medium">{word}</span>
-              <span className="text-muted-foreground">{count}</span>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="mt-3 text-muted-foreground">No frequent words yet</p>
-      )}
-    </div>
+        {(() => {
+          const qTitle = question.questionTitle
+          const isTextual =
+            question.questionType === "text" || question.questionType === "textarea"
 
-    {/* Average Word Length */}
-    <div className="p-4 bg-background rounded-lg border border-border flex flex-col justify-center items-center text-center">
-      <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-        Average Word Length
-      </p>
-      <p className="text-3xl font-extrabold text-blue-600 mt-3">
-        {averageWordLengthFrom(textAnswerCounts)}
-      </p>
-    </div>
-  </div>
-</div>
+          const textAnswerCounts: Record<string, number> =
+            (question.distribution as Record<string, number>) ??
+            (distributionData.length
+              ? Object.fromEntries(
+                  distributionData.map((d) => [String(d.name), Number(d.value) || 0])
+                )
+              : {})
 
-    
-                {/* Answers list */}
-                <div>
-                  <h4 className="font-medium mb-2">Responses</h4>
-                  {Object.keys(textAnswerCounts).length > 0 ? (
-                    <ul className="space-y-2">
-                      {Object.entries(textAnswerCounts).map(([answer, count]) => (
-                        <li
-                          key={`${question.questionId}-answer-${answer}`}
-                          className="p-3 rounded-lg border bg-background text-sm leading-relaxed break-words"
-                        >
-                          <div className="flex justify-between gap-3">
-                            <span className="whitespace-pre-wrap">{answer}</span>
-                            <span className="text-muted-foreground text-xs">
-                              {count} response{count !== 1 ? "s" : ""}
-                            </span>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">No responses yet.</p>
-                  )}
+          return (
+            <section className="space-y-4 rounded-xl border p-5 bg-card/40">
+              {/* Question heading */}
+              <div className="flex items-start justify-between gap-4">
+                <h3 className="text-2xl font-semibold leading-snug">{qTitle}</h3>
+                <div className="shrink-0 text-right">
+                  <Badge variant="outline" className="mr-2 rounded-full">
+                    {question.questionType}
+                  </Badge>
+                  <span className="text-sm text-muted-foreground">
+                    {question.totalResponses} responses
+                  </span>
                 </div>
-              </>
-            ) : (
-              <>
-                {question.average !== null && (
-                  <div className="mb-4 p-4 bg-muted rounded-lg">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground">
-                          Average
+              </div>
+
+              <div className="border-t" />
+
+              {isTextual ? (
+                <>
+                  {/* Top words + avg length */}
+                  <div className="mb-4 p-6 bg-muted rounded-xl shadow-sm">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                      {/* Most Used Words */}
+                      <div className="p-4 bg-background rounded-lg border border-border">
+                        <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                          3 Most Used Words
                         </p>
-                        <p className="text-2xl font-bold text-blue-600">
-                          {question.average}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground">
-                          Standard Deviation
-                        </p>
-                        <p className="text-2xl font-bold text-blue-400">
-                          {question.standardDeviation}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-    
-                {inferredScale && (
-                  <div className="mb-4 p-3 bg-muted/50 rounded-lg">
-                    <p className="text-sm font-medium text-muted-foreground mb-2">
-                      Scale
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {(inferredLabels ?? Array.from({ length: inferredScale })).map(
-                        (label, idx) => (
-                          <span
-                            key={`${question.questionId}-label-${idx}`}
-                            className="px-2.5 py-1 rounded-full border text-xs bg-white"
-                          >
-                            {label ?? idx + 1}
-                          </span>
-                        )
-                      )}
-                    </div>
-                  </div>
-                )}
-    
-                {distributionData.length > 0 && (
-                  <div className="grid md:grid-cols-2 gap-4">
-                    {/* Bar */}
-                    <div className="min-w-0">
-                      <h4 className="font-medium mb-2">Response Distribution</h4>
-                      <div className="w-full overflow-x-auto sm:overflow-visible">
-                        <div
-                          style={{
-                            minWidth: Math.max(360, distributionData.length * 64),
-                          }}
-                          className="min-w-0"
-                        >
-                          <ChartContainer
-                            config={{
-                              value: {
-                                label: "Responses",
-                                color: "hsl(var(--chart-1))",
-                              },
-                            }}
-                            className="h-56 sm:h-64 w-full"
-                          >
-                            <ResponsiveContainer width="100%" height="100%">
-                              <BarChart
-                                data={distributionData}
-                                margin={{
-                                  top: 8,
-                                  right: 8,
-                                  bottom: 28,
-                                  left: 8,
-                                }}
-                                barCategoryGap="20%"
+                        {topNWordsFrom(textAnswerCounts, 3).length > 0 ? (
+                          <ul className="mt-3 space-y-2 text-sm">
+                            {topNWordsFrom(textAnswerCounts, 3).map(({ word, count }) => (
+                              <li
+                                key={`${question.questionId}-word-${word}`}
+                                className="flex items-center justify-between border-b border-border pb-1 last:border-0 last:pb-0"
                               >
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey="name" />
-                                <YAxis />
-                                <ChartTooltip content={<ChartTooltipContent />} />
-                                <Bar
-                                  dataKey="value"
-                                  fill="white"
-                                  radius={[4, 4, 0, 0]}
-                                >
-                                  {distributionData.map((d, index) => (
-                                    <Cell
-                                      key={`${question.questionId}-bar-${d.name}-${index}`}
-                                      fill="white"
-                                      stroke="black"
-                                      strokeWidth={2}
-                                    />
-                                  ))}
-                                </Bar>
-                              </BarChart>
-                            </ResponsiveContainer>
-                          </ChartContainer>
+                                <span className="font-medium">{word}</span>
+                                <span className="text-muted-foreground">{count}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="mt-3 text-muted-foreground">No frequent words yet</p>
+                        )}
+                      </div>
+
+                      {/* Average Word Length */}
+                      <div className="p-4 bg-background rounded-lg border border-border flex flex-col justify-center items-center text-center">
+                        <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                          Average Word Length
+                        </p>
+                        <p className="text-3xl font-extrabold text-blue-600 mt-3">
+                          {averageWordLengthFrom(textAnswerCounts)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Answers list */}
+                  <div>
+                    <h4 className="font-medium mb-2">Responses</h4>
+                    {Object.keys(textAnswerCounts).length > 0 ? (
+                      <ul className="space-y-2">
+                        {Object.entries(textAnswerCounts).map(([answer, count]) => (
+                          <li
+                            key={`${question.questionId}-answer-${answer}`}
+                            className="p-3 rounded-lg border bg-background text-sm leading-relaxed break-words"
+                          >
+                            <div className="flex justify-between gap-3">
+                              <span className="whitespace-pre-wrap">{answer}</span>
+                              <span className="text-muted-foreground text-xs">
+                                {count} response{count !== 1 ? "s" : ""}
+                              </span>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">No responses yet.</p>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <>
+                  {question.average !== null && (
+                    <div className="mb-4 p-4 bg-muted rounded-lg">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground">
+                            Average
+                          </p>
+                          <p className="text-2xl font-bold text-blue-600">
+                            {question.average}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground">
+                            Standard Deviation
+                          </p>
+                          <p className="text-2xl font-bold text-blue-400">
+                            {question.standardDeviation}
+                          </p>
                         </div>
                       </div>
                     </div>
-    
-                    {/* Pie */}
-                    {distributionData.length <= 8 && (
-                      <div className="min-w-0">
-                        <h4 className="font-medium mb-2">Distribution Breakdown</h4>
-                        <ChartContainer
-                          config={{
-                            value: {
-                              label: "Responses",
-                              color: "hsl(var(--chart-2))",
-                            },
-                          }}
-                          className="h-64 w-full"
-                        >
-                          <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                              <Pie
-                                data={distributionData}
-                                cx="50%"
-                                cy="50%"
-                                outerRadius={80}
-                                dataKey="value"
-                                label={({ name, value }) => `${name}: ${value}`}
-                              >
-                                {distributionData.map((d, index) => (
-                                  <Cell
-                                    key={`${question.questionId}-pie-${d.name}-${index}`}
-                                    fill={COLORS[index % COLORS.length]}
-                                  />
-                                ))}
-                              </Pie>
-                              <ChartTooltip content={<ChartTooltipContent />} />
-                            </PieChart>
-                          </ResponsiveContainer>
-                        </ChartContainer>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </>
-            )}
-          </section>
-        )
-      })()}
-    </CardContent>
-    
-    
+                  )}
 
+                  {inferredScale && (
+                    <div className="mb-4 p-3 bg-muted/50 rounded-lg">
+                      <p className="text-sm font-medium text-muted-foreground mb-2">
+                        Scale
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {(inferredLabels ?? Array.from({ length: inferredScale })).map(
+                          (label, idx) => (
+                            <span
+                              key={`${question.questionId}-label-${idx}`}
+                              className="px-2.5 py-1 rounded-full border text-xs bg-white"
+                            >
+                              {label ?? idx + 1}
+                            </span>
+                          )
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {distributionData.length > 0 && (
+                    <div className="grid md:grid-cols-2 gap-4">
+                      {/* Bar */}
+                      <div className="min-w-0">
+                        <h4 className="font-medium mb-2">Response Distribution</h4>
+                        <div className="w-full overflow-x-auto sm:overflow-visible">
+                          <div
+                            style={{
+                              minWidth: Math.max(360, distributionData.length * 64),
+                            }}
+                            className="min-w-0"
+                          >
+                            <ChartContainer
+                              config={{
+                                value: {
+                                  label: "Responses",
+                                  color: "hsl(var(--chart-1))",
+                                },
+                              }}
+                              className="h-56 sm:h-64 w-full"
+                            >
+                              <ResponsiveContainer width="100%" height="100%">
+                                <BarChart
+                                  data={distributionData}
+                                  margin={{ top: 8, right: 8, bottom: 28, left: 8 }}
+                                  barCategoryGap="20%"
+                                >
+                                  <CartesianGrid strokeDasharray="3 3" />
+                                  <XAxis dataKey="name" />
+                                  <YAxis />
+                                  <ChartTooltip content={<ChartTooltipContent />} />
+                                  <Bar
+                                    dataKey="value"
+                                    fill="white"
+                                    radius={[4, 4, 0, 0]}
+                                  >
+                                    {distributionData.map((d, index) => (
+                                      <Cell
+                                        key={`${question.questionId}-bar-${d.name}-${index}`}
+                                        fill="white"
+                                        stroke="black"
+                                        strokeWidth={2}
+                                      />
+                                    ))}
+                                  </Bar>
+                                </BarChart>
+                              </ResponsiveContainer>
+                            </ChartContainer>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Pie */}
+                      {distributionData.length <= 8 && (
+                        <div className="min-w-0">
+                          <h4 className="font-medium mb-2">Distribution Breakdown</h4>
+                          <ChartContainer
+                            config={{
+                              value: { label: "Responses", color: "hsl(var(--chart-2))" },
+                            }}
+                            className="h-64 w-full"
+                          >
+                            <ResponsiveContainer width="100%" height="100%">
+                              <PieChart>
+                                <Pie
+                                  data={distributionData}
+                                  cx="50%"
+                                  cy="50%"
+                                  outerRadius={80}
+                                  dataKey="value"
+                                  label={({ name, value }) => `${name}: ${value}`}
+                                >
+                                  {distributionData.map((d, index) => (
+                                    <Cell
+                                      key={`${question.questionId}-pie-${d.name}-${index}`}
+                                      fill={COLORS[index % COLORS.length]}
+                                    />
+                                  ))}
+                                </Pie>
+                                <ChartTooltip content={<ChartTooltipContent />} />
+                              </PieChart>
+                            </ResponsiveContainer>
+                          </ChartContainer>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+            </section>
+          )
+        })()}
+      </CardContent>
     )
   }
 
@@ -492,21 +497,17 @@ export default function AnalyticsPage() {
                     <CardDescription className="line-clamp-2">
                       {survey.surveyDescription}
                     </CardDescription>
-
-
                   </CardHeader>
 
                   <CardContent className="mt-auto">
                     <div className="flex items-center gap-2">
-                      <Badge variant="secondary" className="rounded-full">{survey.totalResponses} responses</Badge>
+                      <Badge variant="secondary" className="rounded-full">
+                        {survey.totalResponses} responses
+                      </Badge>
                       <Badge variant="outline" className="rounded-full text-black">
                         Created: {new Date(survey.createdAt).toLocaleDateString()}
                       </Badge>
                     </div>
-
-
-
-
                   </CardContent>
                 </Card>
               )
@@ -517,10 +518,32 @@ export default function AnalyticsPage() {
         {/* Selected survey analytics */}
         {selectedSurvey ? (
           <div className="space-y-8">
+            {/* CSV Download */}
+            <div className="flex justify-center"> 
+            <DownloadCsvButton
+              questions={selectedSurvey.questionAnalytics.map(q => ({
+                id: q.questionId,
+                title: q.questionTitle,
+              }))}
+              responses={responsesForCsv}
+              filename={(selectedSurvey.name || selectedSurvey.surveyTitle || "survey") + "-responses"}
+              className="rounded-full"
+              extraHeaderLabels={["Respondent Email", "Submitted At"]}
+              extraHeaderValues={(r) => [
+                r.respondentInfo?.email ?? "",
+                typeof r.createdAt === "string"
+                  ? r.createdAt
+                  : (r.createdAt ? new Date(r.createdAt).toISOString() : ""),
+              ]}
+            />
+            </div>
+
             <SurveyInsight survey={selectedSurvey} />
             <Card className="border-2">
               <CardHeader>
-                <CardTitle className="text-2xl text-blue-900">{selectedSurvey.name || selectedSurvey.surveyTitle}</CardTitle>
+                <CardTitle className="text-2xl text-blue-900">
+                  {selectedSurvey.name || selectedSurvey.surveyTitle}
+                </CardTitle>
                 <CardDescription className="text-lg">
                   {selectedSurvey.surveyDescription}
                   <div className="mt-2">
@@ -534,15 +557,14 @@ export default function AnalyticsPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-  <div className="space-y-4">
-    {selectedSurvey.questionAnalytics.map((qa) => (
-      <div key={qa.questionId ?? `${qa.questionType}-${qa.questionTitle}`}>
-        {renderQuestionAnalytics(qa)}
-      </div>
-    ))}
-  </div>
-</CardContent>
-
+                <div className="space-y-4">
+                  {selectedSurvey.questionAnalytics.map((qa) => (
+                    <div key={qa.questionId ?? `${qa.questionType}-${qa.questionTitle}`}>
+                      {renderQuestionAnalytics(qa)}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
             </Card>
           </div>
         ) : (
@@ -564,6 +586,3 @@ export default function AnalyticsPage() {
     </ProtectedRoute>
   )
 }
-
-
-

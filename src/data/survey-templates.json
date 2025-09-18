@@ -286,14 +286,32 @@
       "icon": "🌍",
       "questions": [
         {
-          "id": "company-name",
-          "type": "text",
-          "question": "What is the name of your company?",
+          "id": "company-sector",
+          "type": "checkbox",
+          "question": "What sector does your company operate in?",
           "required": true,
           "options": {
-            "placeholder": "Enter your company name"
+            "choices": [
+              "Agriculture",
+              "Manufacturing",
+              "Energy & Utilities",
+              "Construction & Real Estate",
+              "Transport & Logistics",
+              "Information Technology",
+              "Telecommunications",
+              "Financial Services",
+              "Healthcare & Pharmaceuticals",
+              "Education & Training",
+              "Retail & Consumer Goods",
+              "Hospitality & Tourism",
+              "Media & Entertainment",
+              "Professional Services",
+              "Public Sector & Non-Profit",
+              "Other (please specify)"
+            ]
           }
         },
+        
         {
           "id": "export-obstacles",
           "type": "checkbox",

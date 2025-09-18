@@ -5,10 +5,22 @@ import { ProtectedRoute } from "@/components/auth/protected-route"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Copy, ExternalLink, Calendar, Users } from "lucide-react"
+import { Copy, ExternalLink, Calendar, Users, Trash2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import Link from "next/link"
 
+// shadcn Confirm dialog
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 interface Survey {
   _id: string
@@ -27,6 +39,7 @@ export default function AdminSurveysPage() {
   const [surveys, setSurveys] = useState<Survey[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -62,6 +75,48 @@ export default function AdminSurveysPage() {
       setError(error instanceof Error ? error.message : "Failed to fetch surveys")
     } finally {
       setLoading(false)
+    }
+  }
+
+  const deleteSurvey = async (surveyId: string) => {
+    const token = localStorage.getItem("auth_token")
+    if (!token) {
+      toast({ title: "Not authorized", description: "Missing auth token.", variant: "destructive" })
+      return
+    }
+    try {
+      setDeletingId(surveyId)
+
+      // Optimistic remove
+      setSurveys((prev) => prev.filter((s) => s._id !== surveyId))
+
+      const res = await fetch(`/api/surveys/${surveyId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      })
+
+      if (!res.ok) {
+        // Revert on failure
+        await fetchSurveys()
+        const msg = `Delete failed: ${res.status}`
+        toast({ title: "Delete failed", description: msg, variant: "destructive" })
+        return
+      }
+
+      toast({ title: "Survey deleted", description: "The survey was removed successfully." })
+    } catch (e) {
+      await fetchSurveys()
+      console.error(e)
+      toast({
+        title: "Delete failed",
+        description: e instanceof Error ? e.message : "Unknown error",
+        variant: "destructive",
+      })
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -118,11 +173,11 @@ export default function AdminSurveysPage() {
     <ProtectedRoute requiredRole="admin">
       <div className="container mx-auto p-6">
         <div className="mb-8">
-        <Link href="/admin">
-                <Button variant="outline" size="sm" className="rounded-full mb-4">
-                  ← Back to Dashboard
-                </Button>
-              </Link>
+          <Link href="/admin">
+            <Button variant="outline" size="sm" className="rounded-full mb-4">
+              ← Back to Dashboard
+            </Button>
+          </Link>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Survey Management</h1>
           <p className="text-gray-600">View and manage all surveys in your database</p>
         </div>
@@ -154,16 +209,53 @@ export default function AdminSurveysPage() {
             {surveys.map((survey) => (
               <Card key={survey._id} className="hover:shadow-md transition-shadow">
                 <CardHeader>
-                  <div className="flex items-start justify-between">
+                  <div className="flex items-start justify-between gap-3">
                     <div className="flex-1">
                       <CardTitle className="text-xl mb-2">{survey.name}</CardTitle>
                       <CardDescription className="text-base">
                         {survey.description || "No description provided"}
                       </CardDescription>
                     </div>
-                    <Badge className={getStatusColor(survey.status)}>{survey.status}</Badge>
+
+                    <div className="flex items-center gap-2">
+                      <Badge className={getStatusColor(survey.status)}>{survey.status}</Badge>
+
+                      {/* Delete with confirm */}
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="destructive"
+                            size="icon"
+                            className="shrink-0"
+                            disabled={deletingId === survey._id}
+                            aria-label="Delete survey"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete this survey?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This action cannot be undone. This will permanently delete “{survey.name}” and its survey
+                              entry from your database. Responses linked to this survey will no longer be accessible.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              className="bg-red-600 hover:bg-red-700"
+                              onClick={() => deleteSurvey(survey._id)}
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </div>
                 </CardHeader>
+
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                     <div className="flex items-center gap-2 text-sm text-gray-600">

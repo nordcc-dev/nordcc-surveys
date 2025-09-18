@@ -104,20 +104,20 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   }
 }
 
-// DELETE /api/surveys/[id] - Delete survey
-export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+
+
+
+
+// DELETE /api/surveys/[id] - Delete survey + cascade responses
+export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const { id } = await params
+    const { id } = params
     const token = request.headers.get("authorization")?.replace("Bearer ", "")
 
-    if (!token) {
-      return NextResponse.json({ error: "No token provided" }, { status: 401 })
-    }
+    if (!token) return NextResponse.json({ error: "No token provided" }, { status: 401 })
 
     const decoded = verifyToken(token)
-    if (!decoded) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 })
-    }
+    if (!decoded) return NextResponse.json({ error: "Invalid token" }, { status: 401 })
 
     if (!ObjectId.isValid(id)) {
       return NextResponse.json({ error: "Invalid survey ID" }, { status: 400 })
@@ -126,23 +126,28 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     const surveys = await getCollection("surveys")
     const responses = await getCollection("responses")
 
-    // Check if survey exists and user owns it
-    const existingSurvey = (await surveys.findOne({
-      _id: new ObjectId(id),
-      createdBy: new ObjectId(decoded.userId),
-    })) as Survey | null
-
-    if (!existingSurvey) {
-      return NextResponse.json({ error: "Survey not found or access denied" }, { status: 404 })
+    // Allow delete if owner OR admin
+    const survey = (await surveys.findOne({ _id: new ObjectId(id) })) as Survey | null
+    if (!survey) {
+      return NextResponse.json({ error: "Survey not found" }, { status: 404 })
     }
 
-    // Delete survey and all its responses
+    const isOwner = survey.createdBy?.toString?.() === decoded.userId
+    const isAdmin = decoded.role === "admin"
+
+
+    if (!isOwner && !isAdmin) {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 })
+    }
+
+    // Cascade delete: survey + its responses
     await Promise.all([
       surveys.deleteOne({ _id: new ObjectId(id) }),
       responses.deleteMany({ surveyId: new ObjectId(id) }),
     ])
 
-    return NextResponse.json({ message: "Survey deleted successfully" })
+    // 204 No Content is ideal for deletions
+    return new NextResponse(null, { status: 204 })
   } catch (error) {
     console.error("Delete survey error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })

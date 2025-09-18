@@ -29,7 +29,7 @@ export interface Survey {
 // Question types
 export interface Question {
   id: string
-  type:
+  type: 
     | "text"
     | "textarea"
     | "multiple-choice"
