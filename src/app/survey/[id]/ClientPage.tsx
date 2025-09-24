@@ -39,6 +39,7 @@ export default function TakeSurvey() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
+  const [started, setStarted] = useState(false)
 
   const fetchSurvey = useCallback(async () => {
     try {
@@ -595,75 +596,107 @@ export default function TakeSurvey() {
       </header>
 
       {/* Main Content (stays centered) */}
-      <main className="flex-1">
-        <div className="max-w-2xl mx-auto p-6">
-          <Card>
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <CardTitle className="text-xl mb-8">
-                    {currentQuestion?.title}
-                    {currentQuestion?.required && (
-                      <Badge variant="secondary" className="ml-2 text-xs rounded-full">
-                        Required
-                      </Badge>
-                    )}
-                  </CardTitle>
-                  {currentQuestion?.question && (
-                    <p className="text-black font-bold text-xl">
-                      {currentQuestion.question}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </CardHeader>
-
-            <CardContent>
-              <div className="mb-8">
-                {currentQuestion && renderQuestion(currentQuestion)}
-              </div>
-
-              {/* Navigation */}
-              <div className="flex justify-between">
-                <Button
-                  variant="outline"
-                  onClick={handlePrevious}
-                  disabled={currentQuestionIndex === 0}
-                  className="rounded-full bg-white"
-                >
-                  <ChevronLeft className="h-4 w-4 mr-2" />
-                  Previous
-                </Button>
-
-                {currentQuestionIndex === (survey?.questions.length || 0) - 1 ? (
-                  <Button
-                    onClick={handleSubmit}
-                    disabled={isSubmitting}
-                    className="bg-primary hover:bg-primary/90 text-white"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                        Submitting...
-                      </>
-                    ) : (
-                      <>
-                        <Send className="h-4 w-4 mr-2" />
-                        Submit Survey
-                      </>
-                    )}
-                  </Button>
-                ) : (
-                  <Button onClick={handleNext} className="bg-primary hover:bg-primary/90 text-white rounded-full">
-                    Next
-                    <ChevronRight className="h-4 w-4 ml-2" />
-                  </Button>
+<main className="flex-1">
+  {!started ? (
+    // ---------- Landing / Welcome section ----------
+    <div className="max-w-2xl mx-auto p-6 mt-25">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-2xl text-center font-bold">Welcome</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <p className="text-foreground text-center">
+            Your input will help us shape and improve NORDCC&apos;s upcoming events, it only
+            takes a few minutes to complete.
+          </p>
+          <div className="flex justify-center">
+            <Button size="lg" className="rounded-full font-bold" onClick={() => setStarted(true)}>
+              Start Survey
+            </Button>
+          </div>
+          
+        </CardContent>
+      </Card>
+    </div>
+  ) : loading ? (
+    // ---------- Loading state after Start ----------
+    <div className="min-h-[50vh] flex items-center justify-center">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+        <p className="text-muted-foreground">Loading survey…</p>
+      </div>
+    </div>
+  ) : (
+    // ---------- Survey section ----------
+    <div className="max-w-2xl mx-auto p-6">
+      <Card>
+        <CardHeader>
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <CardTitle className="text-xl mb-8">
+                {currentQuestion?.title}
+                {currentQuestion?.required && (
+                  <Badge variant="secondary" className="ml-2 text-xs rounded-full">
+                    Required
+                  </Badge>
                 )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </main>
+              </CardTitle>
+              {currentQuestion?.question && (
+                <p className="text-black font-bold text-xl">{currentQuestion.question}</p>
+              )}
+            </div>
+          </div>
+        </CardHeader>
+
+        <CardContent>
+          <div className="mb-8">{currentQuestion && renderQuestion(currentQuestion)}</div>
+
+          {/* Navigation */}
+          <div className="flex justify-between">
+            <Button
+              variant="outline"
+              onClick={handlePrevious}
+              disabled={currentQuestionIndex === 0}
+              className="rounded-full bg-white"
+            >
+              <ChevronLeft className="h-4 w-4 mr-2" />
+              Previous
+            </Button>
+
+            {currentQuestionIndex === (survey?.questions.length || 0) - 1 ? (
+              <Button
+                onClick={handleSubmit}
+                disabled={isSubmitting}
+                className="bg-primary hover:bg-primary/90 text-white"
+              >
+                {isSubmitting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Submitting...
+                  </>
+                ) : (
+                  <>
+                    <Send className="h-4 w-4 mr-2" />
+                    Submit Survey
+                  </>
+                )}
+              </Button>
+            ) : (
+              <Button
+                onClick={handleNext}
+                className="bg-primary hover:bg-primary/90 text-white rounded-full"
+              >
+                Next
+                <ChevronRight className="h-4 w-4 ml-2" />
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )}
+</main>
+
 
       {/* Footer with centered logo */}
       <SurveyFooter />

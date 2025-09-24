@@ -432,7 +432,154 @@
         "showProgressBar": true,
         "thankYouMessage": "Thank you for sharing your experiences. Your input helps us better understand the challenges and opportunities for Norwegian firms in the Netherlands."
       }
+    },
+    {
+      "id": "nordcc-member-interests",
+      "name": "NORDCC Member Interests & Events Survey",
+      "description": "Help us shape upcoming NORDCC events and support by sharing your preferences.",
+      "category": "Feedback",
+      "icon": "🏛️",
+      "questions": [
+        {
+          "id": "event-types",
+          "type": "checkbox",
+          "question": "What types of events would you like the Chamber to organize more often? (Select all that apply)",
+          "required": true,
+          "options": {
+            "choices": [
+              "Networking Drinks",
+              "Company Visits",
+              "Dinners",
+              "Speaker Events",
+              "Workshops",
+              "Panel Discussions"
+            ]
+          }
+        },
+        {
+          "id": "relevant-topics",
+          "type": "checkbox",
+          "question": "Which topics or industries are relevant for your business/studies? (Select all that apply)",
+          "required": true,
+          "options": {
+            "choices": [
+              "Technology",
+              "Sustainability",
+              "Political Developments",
+              "Economic Developments",
+              "Community & Networking",
+              "Norwegian Dutch Relations",
+              "Culture & Society",
+              "Energy & Maritime"
+            ]
+          }
+        },
+        {
+          "id": "support-needs",
+          "type": "textarea",
+          "question": "How can the Chamber better support your business or professional growth?",
+          "required": false,
+          "options": {
+            "placeholder": "e.g., introductions, mentorship, workshops, policy insights…"
+          }
+        },
+        {
+          "id": "activity-feedback",
+          "type": "textarea",
+          "question": "Do you have any specific suggestions or feedback for improving our activities and events?",
+          "required": false,
+          "options": {
+            "placeholder": "Your suggestions…"
+          }
+        },
+        {
+          "id": "event-frequency",
+          "type": "multiple-choice",
+          "question": "How often would you like to see events?",
+          "required": true,
+          "options": {
+            "choices": [
+              "Weekly",
+              "Bi-weekly",
+              "Monthly",
+              "Quarterly",
+              "Occasionally"
+            ]
+          }
+        },
+        {
+          "id": "events-attended",
+          "type": "multiple-choice",
+          "question": "How many NORDCC events have you attended?",
+          "required": true,
+          "options": {
+            "choices": [
+              "0",
+              "1–2",
+              "3–5",
+              "6–10",
+              "10+"
+            ]
+          }
+        },
+        {
+          "id": "company-country",
+          "type": "multiple-choice",
+          "question": "Norwegian or Dutch company?",
+          "required": true,
+          "options": {
+            "choices": [
+              "Norwegian",
+              "Dutch",
+              "Not applicable"
+            ]
+          }
+        },
+        {
+          "id": "persona-type",
+          "type": "multiple-choice",
+          "question": "Individual or Professional?",
+          "required": true,
+          "options": {
+            "choices": [
+              "Individual",
+              "Professional",
+              "Other"
+            ]
+          }
+        },
+        {
+          "id": "industry-served",
+          "type": "checkbox",
+          "question": "What industry do you serve? (Select all that apply)",
+          "required": false,
+          "options": {
+            "choices": [
+              "Energy",
+              "Maritime",
+              "Technology",
+              "Finance",
+              "Education",
+              "Healthcare",
+              "Consulting",
+              "Manufacturing",
+              "Retail & Consumer Goods",
+              "Hospitality & Tourism",
+              "Other"
+            ]
+          }
+        }
+        
+      ],
+      "settings": {
+        "allowAnonymous": true,
+        "requireAuth": false,
+        "multipleResponses": false,
+        "showProgressBar": true,
+        "thankYouMessage": "Thank you for your valuable feedback!"
+      }
     }
+    
     
   ]
 }
