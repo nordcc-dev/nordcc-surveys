@@ -14,7 +14,13 @@
           "required": true,
           "options": {
             "scale": 5,
-            "labels": ["Very Dissatisfied", "Dissatisfied", "Neutral", "Satisfied", "Very Satisfied"]
+            "labels": [
+              "Very Dissatisfied",
+              "Dissatisfied",
+              "Neutral",
+              "Satisfied",
+              "Very Satisfied"
+            ]
           }
         },
         {
@@ -131,7 +137,13 @@
           "required": true,
           "options": {
             "scale": 5,
-            "labels": ["Poor", "Fair", "Good", "Very Good", "Excellent"]
+            "labels": [
+              "Poor",
+              "Fair",
+              "Good",
+              "Very Good",
+              "Excellent"
+            ]
           }
         },
         {
@@ -232,7 +244,12 @@
               "Advanced analytics",
               "24/7 support"
             ],
-            "columns": ["Not Important", "Somewhat Important", "Very Important", "Critical"]
+            "columns": [
+              "Not Important",
+              "Somewhat Important",
+              "Very Important",
+              "Critical"
+            ]
           }
         },
         {
@@ -266,7 +283,12 @@
           "question": "What's your preference?",
           "required": true,
           "options": {
-            "choices": ["Option A", "Option B", "Option C", "Other"]
+            "choices": [
+              "Option A",
+              "Option B",
+              "Option C",
+              "Other"
+            ]
           }
         }
       ],
@@ -311,7 +333,6 @@
             ]
           }
         },
-        
         {
           "id": "export-obstacles",
           "type": "checkbox",
@@ -523,6 +544,15 @@
           }
         },
         {
+          "id": "activity-feedback",
+          "type": "textarea",
+          "question": "Who replaces you if you are not able to attend an event?",
+          "required": false,
+          "options": {
+            "placeholder": "Colleague, team member, assistant, deputy, board representative…"
+          }
+        },
+        {
           "id": "company-country",
           "type": "multiple-choice",
           "question": "Norwegian or Dutch company?",
@@ -569,7 +599,6 @@
             ]
           }
         }
-        
       ],
       "settings": {
         "allowAnonymous": true,
@@ -579,7 +608,5 @@
         "thankYouMessage": "Thank you for your valuable feedback!"
       }
     }
-    
-    
   ]
 }
