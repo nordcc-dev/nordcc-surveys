@@ -153,15 +153,7 @@ export default function LoginPage() {
               </p>
             </div>
 
-            <div className="mt-4 p-3 bg-muted rounded-lg">
-              <p className="text-xs text-muted-foreground text-center">
-                <strong>Demo Credentials:</strong>
-                <br />
-                Email: admin@example.com
-                <br />
-                Password: password
-              </p>
-            </div>
+            
           </CardContent>
         </Card>
       </div>

@@ -544,7 +544,7 @@
           }
         },
         {
-          "id": "activity-feedback",
+          "id": "replacement-event",
           "type": "textarea",
           "question": "Who replaces you if you are not able to attend an event?",
           "required": false,
