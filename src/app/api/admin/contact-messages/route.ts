@@ -1,23 +1,36 @@
-
-import { type NextRequest, NextResponse } from "next/server"
+// app/api/contact-messages/route.ts
+import { NextResponse } from "next/server"
+import { requireAdmin } from "@/lib/auth/requireAdmin"
+import type { APIHandler, AuthenticatedRequest } from "@/lib/auth/types"
 import { getCollection } from "@/lib/mongodb"
-import { requireAdmin } from "@/lib/auth"
+import { ObjectId } from "mongodb"
+
+type ContactMessage = {
+  _id: ObjectId
+  name: string
+  email: string
+  message: string
+  createdAt: Date
+}
 
 // GET - Fetch all contact messages (admin only)
-export const GET = requireAdmin(async (request: NextRequest) => {
+const handler: APIHandler = async (req: AuthenticatedRequest) => {
   try {
-    const { searchParams } = new URL(request.url)
-    const page = Number.parseInt(searchParams.get("page") || "1")
-    const limit = Number.parseInt(searchParams.get("limit") || "20")
+    const { searchParams } = new URL(req.url)
+    const page = Math.max(1, Number.parseInt(searchParams.get("page") || "1"))
+    const limitRaw = Number.parseInt(searchParams.get("limit") || "20")
+    const limit = Math.min(Math.max(1, limitRaw), 100) // cap to prevent abuse
     const skip = (page - 1) * limit
 
-    const contactMessages = await getCollection("contact-messages")
+    const contactMessages = await getCollection<ContactMessage>("contact-messages")
 
-    // Get total count for pagination
-    const total = await contactMessages.countDocuments()
-
-    // Fetch messages with pagination, sorted by newest first
-    const messages = await contactMessages.find({}).sort({ createdAt: -1 }).skip(skip).limit(limit).toArray()
+    const total = await contactMessages.countDocuments({})
+    const messages = await contactMessages
+      .find({}, { projection: { /* optionally redact fields here */ } })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .toArray()
 
     return NextResponse.json({
       messages,
@@ -32,4 +45,7 @@ export const GET = requireAdmin(async (request: NextRequest) => {
     console.error("Error fetching contact messages:", error)
     return NextResponse.json({ error: "Failed to fetch contact messages" }, { status: 500 })
   }
-})
+}
+
+// ✅ Admin gate happens server-side via requireAdmin -> requireAuth -> MongoDB check
+export const GET = requireAdmin(handler)

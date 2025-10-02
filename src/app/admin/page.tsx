@@ -63,14 +63,16 @@ function AdminDashboard() {
 
   const fetchSurveys = async () => {
     try {
-      const token = localStorage.getItem("token")
-      if (!token) return
+      
 
       const response = await fetch("/api/admin/surveys", {
+        method: "GET",
+        credentials: "include", // ✅ send cookies like `auth_token`
         headers: {
-          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
       })
+      
 
       if (response.ok) {
         const data = await response.json()
@@ -123,6 +125,7 @@ function AdminDashboard() {
       if (!token) return
 
       const response = await fetch("/api/admin/contact-messages", {
+        credentials: "include",
         headers: {
           Authorization: `Bearer ${token}`,
         },

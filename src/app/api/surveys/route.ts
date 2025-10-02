@@ -1,33 +1,31 @@
-// app/api/surveys/route.ts
-import { type NextRequest, NextResponse } from "next/server"
-import { getCollection } from "@/lib/mongodb"
-import { verifyToken } from "@/lib/auth"
+import { NextResponse } from "next/server"
 import { ObjectId } from "mongodb"
+import { getCollection } from "@/lib/mongodb"
+import { requireAuth } from "@/lib/auth/requireAuth"
+import type { APIHandler, AuthenticatedRequest } from "@/lib/auth/types"
+import type { Survey } from "@/lib/db-models"
 
-export async function GET(request: NextRequest) {
+// ───────────────────────────────────────────────
+// GET /api/surveys - Get surveys for current user
+// ───────────────────────────────────────────────
+const handler: APIHandler = async (req: AuthenticatedRequest) => {
   try {
-    const headerToken = request.headers.get("authorization")?.replace("Bearer ", "")
-    const cookieToken = request.cookies.get("auth_token")?.value
-    const token = headerToken || cookieToken
+    const surveys = await getCollection<Survey>("surveys")
 
-    if (!token) {
-      return NextResponse.json({ error: "No token provided" }, { status: 401 })
-    }
-
-    const decoded = verifyToken(token)
-    if (!decoded) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 })
-    }
-
-    const surveys = await getCollection("surveys")
     const userSurveys = await surveys
-      .find({ createdBy: new ObjectId(decoded.userId) })
+      .find({ createdBy: new ObjectId(req.user!.userId) })
       .sort({ createdAt: -1 })
       .toArray()
 
     return NextResponse.json({ surveys: userSurveys })
   } catch (error) {
     console.error("Get surveys error:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    )
   }
 }
+
+// ✅ Auth required, but not admin-only
+export const GET = requireAuth(handler)

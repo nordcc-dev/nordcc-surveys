@@ -1,49 +1,72 @@
-
-
-import { type NextRequest, NextResponse } from "next/server"
+// app/api/auth/login/route.ts
+import { NextRequest, NextResponse } from "next/server"
 import { getCollection } from "@/lib/mongodb"
-import { verifyPassword, generateToken } from "@/lib/auth"
+import { verifyPassword } from "@/lib/auth/password-utils"
+import { generateToken, JWTPayload } from "@/lib/auth/token-utils"
 import type { User } from "@/lib/db-models"
+
+// keep this helper local if you don't have the separate file
+export function toSafeUser(user: User): Omit<User, "password"> {
+  const clone = { ...user } as Partial<User>
+  delete clone.password
+  return clone as Omit<User, "password">
+}
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const { email, password } = body
+    const { email, password } = await request.json()
 
-    // Validate input
-    if (!email || !password) {
+    if (typeof email !== "string" || typeof password !== "string") {
       return NextResponse.json({ error: "Email and password are required" }, { status: 400 })
     }
 
-    const users = await getCollection("users")
+    const users = await getCollection<User>("users")
+    const user = await users.findOne({ email })
+    if (!user) return NextResponse.json({ error: "Invalid email or password" }, { status: 401 })
 
-    // Find user by email
-    const user = (await users.findOne({ email })) as User | null
-    if (!user) {
-      return NextResponse.json({ error: "Invalid email or password" }, { status: 401 })
+    const ok = await verifyPassword(password, user.password)
+    if (!ok) return NextResponse.json({ error: "Invalid email or password" }, { status: 401 })
+
+    const tokenVersion = user.tokenVersion ?? 0
+    await users.updateOne({ _id: user._id }, { $set: { updatedAt: new Date(), tokenVersion } })
+
+    const payload: JWTPayload = {
+      userId: String(user._id),
+      email: user.email,
+      role: user.role,
+      tokenVersion,
     }
 
-    // Verify password
-    const isValidPassword = await verifyPassword(password, user.password)
-    if (!isValidPassword) {
-      return NextResponse.json({ error: "Invalid email or password" }, { status: 401 })
-    }
+    // Short-lived JWT (e.g., 15 minutes). Adjust if your generateToken signature differs.
+    const FIFTEEN_MIN = 60 * 15
+    const token = generateToken(payload, FIFTEEN_MIN)
 
-    // Update last login
-    await users.updateOne({ _id: user._id }, { $set: { updatedAt: new Date() } })
+    const safeUser = toSafeUser(user)
 
-    // Generate token
-    const token = generateToken(user)
+    // --- Set httpOnly session cookie (survives refresh, dies on browser close) ---
+    const isProd = process.env.NODE_ENV === "production"
+    const res = NextResponse.json({ user: safeUser, token }) // still return token if you want to keep localStorage
 
-    // Return user data without password
-    const userWithoutPassword = { ...user } as Partial<User>
-    delete userWithoutPassword.password
-    return NextResponse.json({
-      user: userWithoutPassword,
-      token,
+    res.cookies.set("auth_token", token, {
+      httpOnly: true,
+      secure: isProd,          // set true in prod; false is okay on http://localhost
+      sameSite: "strict",
+      path: "/",               // send cookie to all routes
+      // no expires/maxAge => session cookie (cleared when browser closes)
     })
-  } catch (error) {
-    console.error("Login error:", error)
+
+    // (Optional) If you truly want a readable cookie in the browser (not recommended),
+    // you could also set a non-httpOnly mirror. Prefer localStorage over this.
+    // res.cookies.set("auth_token_client", token, {
+    //   httpOnly: false,
+    //   secure: isProd,
+    //   sameSite: "strict",
+    //   path: "/",
+    // })
+
+    return res
+  } catch (err) {
+    console.error("Login error:", err)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

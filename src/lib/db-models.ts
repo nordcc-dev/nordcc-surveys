@@ -9,6 +9,7 @@ export interface User {
   role: "admin" | "user"
   createdAt: Date
   updatedAt: Date
+  tokenVersion?: number
 }
 
 // Survey model

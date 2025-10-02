@@ -1,7 +1,7 @@
 
 import { NextResponse } from "next/server"
 import { getCollection } from "@/lib/mongodb"
-import { requireAdmin } from "@/lib/auth"
+import { requireAdmin } from "@/lib/auth/requireAdmin"
 import type { Survey, SurveyResponse, Question, ResponseValue } from "@/lib/db-models"
 
 // GET /api/responses - Get all survey responses with analytics (admin only)

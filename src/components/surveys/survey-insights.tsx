@@ -50,6 +50,7 @@ export function SurveyInsight({ survey }: Props) {
 
       const token = localStorage.getItem("auth_token")
       const res = await fetch("/api/analysis/survey", {
+        credentials: "include",
         method: "POST",
         headers: {
           "Content-Type": "application/json",

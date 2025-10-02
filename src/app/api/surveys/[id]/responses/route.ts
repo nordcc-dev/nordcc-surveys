@@ -1,56 +1,56 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { getCollection } from "@/lib/mongodb"
-import { verifyToken } from "@/lib/auth"
+import { NextResponse } from "next/server"
 import { ObjectId } from "mongodb"
+import { getCollection } from "@/lib/mongodb"
+import { requireAdmin } from "@/lib/auth/requireAdmin"
+import type { APIHandler, AuthenticatedRequest } from "@/lib/auth/types"
 import type { Survey, SurveyResponse } from "@/lib/db-models"
 
-// GET /api/surveys/[id]/responses - Get all responses for a survey (admin only)
-export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+// ───────────────────────────────────────────────
+// GET (Admin only) - fetch all responses for a survey
+// ───────────────────────────────────────────────
+const getHandler: APIHandler<{ id: string }> = async (
+  _req: AuthenticatedRequest,
+  { params }: { params: Promise<{ id: string }> }
+) => {
   try {
     const { id } = await params
-    const token = request.headers.get("authorization")?.replace("Bearer ", "")
-
-    if (!token) {
-      return NextResponse.json({ error: "No token provided" }, { status: 401 })
-    }
-
-    const decoded = verifyToken(token)
-    if (!decoded) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 })
-    }
 
     if (!ObjectId.isValid(id)) {
       return NextResponse.json({ error: "Invalid survey ID" }, { status: 400 })
     }
 
-    const surveys = await getCollection("surveys")
-    const responses = await getCollection("responses")
+    const surveys = await getCollection<Survey>("surveys")
+    const responses = await getCollection<SurveyResponse>("responses")
 
-    // Check if survey exists and user owns it
-    const survey = (await surveys.findOne({
-      _id: new ObjectId(id),
-      createdBy: new ObjectId(decoded.userId),
-    })) as Survey | null
-
+    // Make sure the survey exists
+    const survey = await surveys.findOne({ _id: new ObjectId(id) })
     if (!survey) {
-      return NextResponse.json({ error: "Survey not found or access denied" }, { status: 404 })
+      return NextResponse.json({ error: "Survey not found" }, { status: 404 })
     }
 
-    // Get all responses for this survey
+    // Fetch responses
     const surveyResponses = await responses
       .find({ surveyId: new ObjectId(id) })
       .sort({ createdAt: -1 })
       .toArray()
 
-    return NextResponse.json({ responses: surveyResponses })
+    return NextResponse.json({ survey, responses: surveyResponses })
   } catch (error) {
-    console.error("Get responses error:", error)
+    console.error("Get survey responses error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
 
-// POST /api/surveys/[id]/responses - Submit a survey response
-export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+// ✅ Require admin to access
+export const GET = requireAdmin(getHandler)
+
+// ───────────────────────────────────────────────
+// POST (Public) - submit a survey response
+// ───────────────────────────────────────────────
+export async function POST(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     const { id } = await params
 
@@ -60,17 +60,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     const { responses: responseData, respondentInfo, startTime } = await request.json()
 
-    // Validate input
     if (!responseData || typeof responseData !== "object") {
       return NextResponse.json({ error: "Response data is required" }, { status: 400 })
     }
 
-    const surveys = await getCollection("surveys")
-    const responses = await getCollection("responses")
+    const surveys = await getCollection<Survey>("surveys")
+    const responses = await getCollection<SurveyResponse>("responses")
 
-    // Check if survey exists and is published or draft
-    const survey = (await surveys.findOne({ _id: new ObjectId(id) })) as Survey | null
-
+    const survey = await surveys.findOne({ _id: new ObjectId(id) })
     if (!survey) {
       return NextResponse.json({ error: "Survey not found" }, { status: 404 })
     }
@@ -79,25 +76,28 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ error: "Survey is not available for responses" }, { status: 400 })
     }
 
-    // Validate required questions are answered
+    // Check required questions
     const requiredQuestions = survey.questions.filter((q) => q.required)
-    const missingRequired = requiredQuestions.filter((q) => !responseData[q.id] || responseData[q.id] === "")
-
+    const missingRequired = requiredQuestions.filter(
+      (q) => !responseData[q.id] || responseData[q.id] === ""
+    )
     if (missingRequired.length > 0) {
       return NextResponse.json(
         {
           error: "Required questions not answered",
           missingQuestions: missingRequired.map((q) => q.id),
         },
-        { status: 400 },
+        { status: 400 }
       )
     }
 
-    // Get client IP and user agent
-    const clientIP = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown"
+    // Metadata
+    const clientIP =
+      request.headers.get("x-forwarded-for") ||
+      request.headers.get("x-real-ip") ||
+      "unknown"
     const userAgent = request.headers.get("user-agent") || "unknown"
 
-    // Create response record
     const newResponse: Omit<SurveyResponse, "_id"> = {
       surveyId: new ObjectId(id),
       responses: responseData,
@@ -112,22 +112,16 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       createdAt: new Date(),
     }
 
-    // Insert response
     const result = await responses.insertOne(newResponse)
 
-    // Update survey response count
     await surveys.updateOne({ _id: new ObjectId(id) }, { $inc: { responseCount: 1 } })
-
-    const savedResponse = await responses.findOne({ _id: result.insertedId })
 
     return NextResponse.json({
       message: "Response submitted successfully",
-      responseId: savedResponse?._id,
+      responseId: result.insertedId,
     })
   } catch (error) {
-    console.error("Submit response error:", error)
+    console.error("Submit survey response error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
-
-

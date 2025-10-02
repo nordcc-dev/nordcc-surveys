@@ -1,9 +1,14 @@
 // app/api/analysis/survey/route.ts
 import { NextResponse } from "next/server"
 import Groq from "groq-sdk"
-import { requireAdmin } from "@/lib/auth"
+import { requireAdmin } from "@/lib/auth/requireAdmin"
+import type { APIHandler, AuthenticatedRequest } from "@/lib/auth/types"
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
+const groqApiKey = process.env.GROQ_API_KEY
+if (!groqApiKey) {
+  throw new Error("Missing GROQ_API_KEY")
+}
+const groq = new Groq({ apiKey: groqApiKey })
 
 type QuestionAnalytics = {
   questionId: string
@@ -71,24 +76,31 @@ Guidance:
 - NPS and scale questions scale from 0-10, rating questions are from 1-5.
 - Be specific, concise, and actionable.
 - Return the response in markdown format`
-
 }
 
-export const POST = requireAdmin(async (req: Request) => {
+// POST — Admin-only survey analysis
+const handler: APIHandler = async (req: AuthenticatedRequest) => {
   try {
     const body = (await req.json()) as SurveyPayload
-    if (!body?.surveyId || !Array.isArray(body?.questionAnalytics)) {
+
+    // Basic payload validation
+    if (
+      !body ||
+      typeof body.surveyId !== "string" ||
+      !Array.isArray(body.questionAnalytics) ||
+      typeof body.totalResponses !== "number"
+    ) {
       return NextResponse.json({ error: "Invalid payload" }, { status: 400 })
     }
 
-    if (!process.env.GROQ_API_KEY) {
-      return NextResponse.json({ error: "Server is missing GROQ_API_KEY" }, { status: 500 })
+    // (Optional) cap payload sizes to protect the LLM call
+    if (body.questionAnalytics.length > 500) {
+      return NextResponse.json({ error: "Too many questions" }, { status: 413 })
     }
 
     const prompt = buildPrompt(body)
 
     const completion = await groq.chat.completions.create({
-      // A strong general model; adjust if you prefer a different one
       model: "llama-3.1-8b-instant",
       temperature: 0.2,
       messages: [
@@ -98,9 +110,16 @@ export const POST = requireAdmin(async (req: Request) => {
     })
 
     const analysis = completion.choices?.[0]?.message?.content ?? ""
-    return NextResponse.json({ success: true, analysis, model: "llama-3.1-70b-versatile" })
+    return NextResponse.json({
+      success: true,
+      analysis,
+      model: "llama-3.1-8b-instant",
+    })
   } catch (err) {
     console.error("Survey analysis error:", err)
     return NextResponse.json({ error: "Failed to analyze survey" }, { status: 500 })
   }
-})
+}
+
+// ✅ Server-side admin gate: requireAuth (JWT verify) → MongoDB admins check
+export const POST = requireAdmin(handler)

@@ -58,8 +58,10 @@ export default function AdminSurveysPage() {
       }
 
       const response = await fetch("/api/surveys", {
+        credentials: "include",
         headers: {
           Authorization: `Bearer ${token}`,
+          credentials: "include",
           "Content-Type": "application/json",
         },
       })

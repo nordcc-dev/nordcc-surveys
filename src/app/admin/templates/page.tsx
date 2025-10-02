@@ -81,16 +81,19 @@ export default function TemplatesPage() {
     setCreating(templateId)
     try {
       const response = await fetch("/api/surveys/from-template", {
+        
         method: "POST",
+        credentials: "include", // send cookies like auth_token
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${localStorage.getItem("token")}`, // still sending old header
         },
         body: JSON.stringify({
           templateId,
           title: `${templateName} - ${new Date().toLocaleDateString()}`,
         }),
       })
+      
 
       const data = await response.json()
 

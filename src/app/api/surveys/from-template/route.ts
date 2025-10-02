@@ -1,13 +1,11 @@
-// app/api/surveys/from-template/route.ts
-import { type NextRequest, NextResponse } from "next/server"
-import { getCollection } from "@/lib/mongodb"
-import { verifyToken } from "@/lib/auth"
+import { NextResponse } from "next/server"
 import { ObjectId } from "mongodb"
+import { getCollection } from "@/lib/mongodb"
+import { requireAuth } from "@/lib/auth/requireAuth"
+import type { APIHandler, AuthenticatedRequest } from "@/lib/auth/types"
 
 // IMPORTANT: ensure tsconfig has "resolveJsonModule": true
 import localTemplatesFile from "@/data/survey-templates.json"
-
-
 
 type DbTemplate = {
   _id?: ObjectId | string
@@ -24,27 +22,14 @@ type DbTemplate = {
   updatedAt?: string
 }
 
-
 type CreateFromTemplateBody = {
   templateId?: string
   title?: string
-  /** Optional override for debugging */
   source?: "local" | "db" | "auto"
 }
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null
-}
-
-function normalizeLocalTemplates(src: unknown): DbTemplate[] {
-  // Accept either { templates: [...] } or just [...]
-  if (Array.isArray(src)) {
-    return src.filter(isDbTemplate)
-  }
-  if (isRecord(src) && Array.isArray((src as { templates?: unknown }).templates)) {
-    return (src as { templates: unknown[] }).templates.filter(isDbTemplate)
-  }
-  return []
 }
 
 function isDbTemplate(v: unknown): v is DbTemplate {
@@ -57,7 +42,18 @@ function isDbTemplate(v: unknown): v is DbTemplate {
   return true
 }
 
-async function findDbTemplateById(templatesCol: Awaited<ReturnType<typeof getCollection>>, id: string) {
+function normalizeLocalTemplates(src: unknown): DbTemplate[] {
+  if (Array.isArray(src)) return src.filter(isDbTemplate)
+  if (isRecord(src) && Array.isArray((src as { templates?: unknown }).templates)) {
+    return (src as { templates: unknown[] }).templates.filter(isDbTemplate)
+  }
+  return []
+}
+
+async function findDbTemplateById(
+  templatesCol: Awaited<ReturnType<typeof getCollection>>,
+  id: string
+) {
   let t = await templatesCol.findOne<DbTemplate>({ id, isTemplate: true })
   if (!t && ObjectId.isValid(id)) {
     t = await templatesCol.findOne<DbTemplate>({ _id: new ObjectId(id), isTemplate: true })
@@ -65,43 +61,26 @@ async function findDbTemplateById(templatesCol: Awaited<ReturnType<typeof getCol
   return t
 }
 
-export async function POST(request: NextRequest) {
+// ───────────────────────────────────────────────
+// POST /api/surveys/from-template (auth required)
+// ───────────────────────────────────────────────
+const handler: APIHandler = async (req: AuthenticatedRequest) => {
   try {
-    // Auth
-    const headerToken = request.headers.get("authorization")?.replace("Bearer ", "")
-    const cookieToken = request.cookies.get("auth_token")?.value
-    const token = headerToken || cookieToken
-    if (!token) {
-      return NextResponse.json({ success: false, error: "No token provided" }, { status: 401 })
-    }
-
-    const decoded = verifyToken(token)
-    if (!decoded) {
-      return NextResponse.json({ success: false, error: "Invalid token" }, { status: 401 })
-    }
-
-    // Body
-    const { templateId, title, source = "auto" }: CreateFromTemplateBody = await request.json()
+    const { templateId, title, source = "auto" }: CreateFromTemplateBody = await req.json()
     if (!templateId?.trim()) {
       return NextResponse.json({ success: false, error: "Template ID is required" }, { status: 400 })
     }
     const wantedId = templateId.trim()
 
-    // Collections
     const templatesCol = await getCollection("templates")
     const surveysCol = await getCollection("surveys")
 
-    // Prepare local list once (at import time) and normalize shape
     const localList: DbTemplate[] = normalizeLocalTemplates(localTemplatesFile)
 
-    // Resolve template by source preference
+    // Resolve template
     let template: DbTemplate | null = null
-
-    const tryLocal = () => {
-      const found = localList.find(t => (t.id ?? "").trim() === wantedId) ?? null
-      return found
-    }
-
+    const tryLocal = () =>
+      localList.find((t) => (t.id ?? "").trim() === wantedId) ?? null
     const tryDb = () => findDbTemplateById(templatesCol, wantedId)
 
     if (source === "local") {
@@ -109,7 +88,6 @@ export async function POST(request: NextRequest) {
     } else if (source === "db") {
       template = await tryDb()
     } else {
-      // "auto" — local first, then DB
       template = tryLocal() ?? (await tryDb())
     }
 
@@ -122,13 +100,13 @@ export async function POST(request: NextRequest) {
             triedId: wantedId,
             localCount: localList.length,
             exampleLocalIds: localList
-              .map(t => t.id)
+              .map((t) => t.id)
               .filter((x): x is string => typeof x === "string")
               .slice(0, 20),
             sourceTried: source,
           },
         },
-        { status: 404 },
+        { status: 404 }
       )
     }
 
@@ -138,7 +116,7 @@ export async function POST(request: NextRequest) {
       description: String(template.description ?? ""),
       questions: Array.isArray(template.questions) ? template.questions : [],
       settings: template.settings ?? {},
-      createdBy: new ObjectId(decoded.userId),
+      createdBy: new ObjectId(req.user!.userId), // ✅ secure userId from token
       createdAt: now,
       updatedAt: now,
       status: "published" as const,
@@ -153,6 +131,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, survey: created }, { status: 201 })
   } catch (error) {
     console.error("Create survey from template error:", error)
-    return NextResponse.json({ success: false, error: "Failed to create survey from template" }, { status: 500 })
+    return NextResponse.json(
+      { success: false, error: "Failed to create survey from template" },
+      { status: 500 }
+    )
   }
 }
+
+// ✅ Require authentication (JWT + tokenVersion checked)
+export const POST = requireAuth(handler)

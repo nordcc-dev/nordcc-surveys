@@ -49,6 +49,7 @@ export function RecentActivityCard() {
       
 
         const res = await fetch("/api/responses/recent", {
+          credentials: "include",
           headers: { Authorization: `Bearer ${token}` },
           cache: "no-store",
         })

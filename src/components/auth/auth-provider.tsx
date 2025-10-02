@@ -38,6 +38,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const validateToken = async (token: string) => {
     try {
       const response = await fetch("/api/auth/me", {
+        credentials: "include",
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -61,6 +62,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
       const response = await fetch("/api/auth/login", {
+        credentials: "include",
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -87,6 +89,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signup = async (email: string, password: string, name: string): Promise<boolean> => {
     try {
       const response = await fetch("/api/auth/signup", {
+        credentials: "include",
         method: "POST",
         headers: {
           "Content-Type": "application/json",

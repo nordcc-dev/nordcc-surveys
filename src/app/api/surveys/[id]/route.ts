@@ -1,11 +1,53 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { getCollection } from "@/lib/mongodb"
-import { verifyToken } from "@/lib/auth"
+// app/api/surveys/[id]/route.ts
+import { NextResponse } from "next/server"
 import { ObjectId } from "mongodb"
+import { getCollection } from "@/lib/mongodb"
+import { requireAuth } from "@/lib/auth/requireAuth"
+import type { APIHandler, AuthenticatedRequest } from "@/lib/auth/types"
+import { verifyToken } from "@/lib/auth/token-utils"
+import { getUsersCollection } from "@/lib/mongodb"
+
 import type { Survey } from "@/lib/db-models"
 
-// GET /api/surveys/[id] - Get specific survey
-export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+
+
+
+// ────────────────────────────────────────────────────────────────
+// Helper: optional server-side auth (verifies token + tokenVersion)
+// Returns the authenticated userId (string) or null
+// ────────────────────────────────────────────────────────────────
+async function optionalUserIdFromAuthHeader(req: Request): Promise<string | null> {
+  const raw = req.headers.get("authorization")
+  const token = raw?.startsWith("Bearer ") ? raw.slice(7) : undefined
+  if (!token) return null
+
+  const decoded = verifyToken(token)
+  if (!decoded) return null
+
+  // Convert JWT string id → ObjectId for Mongo query
+  const objectId = new ObjectId(decoded.userId)
+
+  const users = await getUsersCollection()
+  const user = await users.findOne(
+    { _id: objectId },
+    { projection: { tokenVersion: 1 } }
+  )
+
+  if (!user) return null
+
+  const currentVersion = user.tokenVersion ?? 0
+  if ((decoded.tokenVersion ?? 0) !== currentVersion) return null
+
+  return decoded.userId
+}
+
+// ────────────────────────────────────────────────────────────────
+// GET /api/surveys/[id]  (public; owners see full document)
+// ────────────────────────────────────────────────────────────────
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     const { id } = await params
 
@@ -13,24 +55,19 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: "Invalid survey ID" }, { status: 400 })
     }
 
-    const surveys = await getCollection("surveys")
-    const survey = (await surveys.findOne({ _id: new ObjectId(id) })) as Survey | null
-
+    const surveys = await getCollection<Survey>("surveys")
+    const survey = await surveys.findOne({ _id: new ObjectId(id) })
     if (!survey) {
       return NextResponse.json({ error: "Survey not found" }, { status: 404 })
     }
 
-    // Check if request is authenticated (for admin access)
-    const token = request.headers.get("authorization")?.replace("Bearer ", "")
-    if (token) {
-      const decoded = verifyToken(token)
-      if (decoded && decoded.userId === survey.createdBy.toString()) {
-        // Return full survey data for owner
-        return NextResponse.json({ survey })
-      }
+    // If authenticated & owner → return full survey
+    const authedUserId = await optionalUserIdFromAuthHeader(request)
+    if (authedUserId && survey.createdBy?.toString?.() === authedUserId) {
+      return NextResponse.json({ survey })
     }
 
-    // Return public survey data (for taking surveys)
+    // Otherwise return public subset (only if survey is available)
     if (survey.status !== "published" && survey.status !== "draft") {
       return NextResponse.json({ error: "Survey not available" }, { status: 404 })
     }
@@ -50,107 +87,93 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   }
 }
 
-// PUT /api/surveys/[id] - Update survey
-export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+// ────────────────────────────────────────────────────────────────
+// PUT /api/surveys/[id]  (owner only)
+// ────────────────────────────────────────────────────────────────
+const putHandler: APIHandler<{ id: string }> = async (
+  req: AuthenticatedRequest,
+  { params }: { params: Promise<{ id: string }> }
+) => {
   try {
     const { id } = await params
-    const token = request.headers.get("authorization")?.replace("Bearer ", "")
-
-    if (!token) {
-      return NextResponse.json({ error: "No token provided" }, { status: 401 })
-    }
-
-    const decoded = verifyToken(token)
-    if (!decoded) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 })
-    }
-
     if (!ObjectId.isValid(id)) {
       return NextResponse.json({ error: "Invalid survey ID" }, { status: 400 })
     }
 
-    const { title, description, questions, settings, status } = await request.json()
+    const { title, description, questions, settings, status } = await req.json()
 
-    const surveys = await getCollection("surveys")
+    const surveys = await getCollection<Survey>("surveys")
 
-    // Check if survey exists and user owns it
-    const existingSurvey = (await surveys.findOne({
+    // owner check
+    const existing = await surveys.findOne({
       _id: new ObjectId(id),
-      createdBy: new ObjectId(decoded.userId),
-    })) as Survey | null
-
-    if (!existingSurvey) {
+      createdBy: new ObjectId(req.user!.userId),
+    })
+    if (!existing) {
       return NextResponse.json({ error: "Survey not found or access denied" }, { status: 404 })
     }
 
-    // Update survey
-    const updateData: Partial<Survey> = {
-      updatedAt: new Date(),
-    }
-
-    if (title) updateData.title = title
+    const updateData: Partial<Survey> = { updatedAt: new Date() }
+    if (typeof title === "string") updateData.title = title
     if (description !== undefined) updateData.description = description
     if (questions) updateData.questions = questions
     if (settings) updateData.settings = settings
     if (status) updateData.status = status
 
     await surveys.updateOne({ _id: new ObjectId(id) }, { $set: updateData })
-
-    const updatedSurvey = await surveys.findOne({ _id: new ObjectId(id) })
-    return NextResponse.json({ survey: updatedSurvey })
+    const updated = await surveys.findOne({ _id: new ObjectId(id) })
+    return NextResponse.json({ survey: updated })
   } catch (error) {
     console.error("Update survey error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
+export const PUT = requireAuth(putHandler)
 
+// ────────────────────────────────────────────────────────────────
+// DELETE /api/surveys/[id]  (owner OR admin)
+// ────────────────────────────────────────────────────────────────
+type AdminDoc = { userId: string; admin: boolean }
 
-
-
-
-// DELETE /api/surveys/[id] - Delete survey + cascade responses
-export async function DELETE(request: NextRequest, props: { params: Promise<{ id: string }> }) {
-  const params = await props.params;
+const deleteHandler: APIHandler<{ id: string }> = async (
+  req: AuthenticatedRequest,
+  { params }: { params: Promise<{ id: string }> }
+) => {
   try {
-    const { id } = params
-    const token = request.headers.get("authorization")?.replace("Bearer ", "")
-
-    if (!token) return NextResponse.json({ error: "No token provided" }, { status: 401 })
-
-    const decoded = verifyToken(token)
-    if (!decoded) return NextResponse.json({ error: "Invalid token" }, { status: 401 })
-
+    const { id } = await params
     if (!ObjectId.isValid(id)) {
       return NextResponse.json({ error: "Invalid survey ID" }, { status: 400 })
     }
 
-    const surveys = await getCollection("surveys")
+    const surveys = await getCollection<Survey>("surveys")
     const responses = await getCollection("responses")
+    const admins = await getCollection<AdminDoc>("admins")
 
-    // Allow delete if owner OR admin
-    const survey = (await surveys.findOne({ _id: new ObjectId(id) })) as Survey | null
+    const survey = await surveys.findOne({ _id: new ObjectId(id) })
     if (!survey) {
       return NextResponse.json({ error: "Survey not found" }, { status: 404 })
     }
 
-    const isOwner = survey.createdBy?.toString?.() === decoded.userId
-    const isAdmin = decoded.role === "admin"
-
+    // Owner or admin?
+    const isOwner = survey.createdBy?.toString?.() === req.user!.userId
+    const isAdmin = !!(await admins.findOne(
+      { userId: req.user!.userId, admin: true },
+      { projection: { userId: 1 } }
+    ))
 
     if (!isOwner && !isAdmin) {
       return NextResponse.json({ error: "Access denied" }, { status: 403 })
     }
 
-    // Cascade delete: survey + its responses
     await Promise.all([
       surveys.deleteOne({ _id: new ObjectId(id) }),
       responses.deleteMany({ surveyId: new ObjectId(id) }),
     ])
 
-    // 204 No Content is ideal for deletions
     return new NextResponse(null, { status: 204 })
   } catch (error) {
     console.error("Delete survey error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
+export const DELETE = requireAuth(deleteHandler)

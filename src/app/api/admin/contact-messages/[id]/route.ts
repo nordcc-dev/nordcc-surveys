@@ -1,11 +1,23 @@
-
-import { type NextRequest, NextResponse } from "next/server"
+// app/api/contact-messages/[id]/route.ts
+import { NextResponse } from "next/server"
 import { getCollection } from "@/lib/mongodb"
-import { requireAdmin } from "@/lib/auth"
+import { requireAdmin } from "@/lib/auth/requireAdmin"
+import type { APIHandler, AuthenticatedRequest } from "@/lib/auth/types"
 import { ObjectId } from "mongodb"
 
+type ContactMessage = {
+  _id: ObjectId
+  name: string
+  email: string
+  message: string
+  createdAt: Date
+}
+
 // DELETE - Delete a contact message (admin only)
-export const DELETE = requireAdmin(async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+const handler: APIHandler<{ id: string }> = async (
+  req: AuthenticatedRequest,
+  { params }: { params: Promise<{ id: string }> }
+) => {
   try {
     const { id } = await params
 
@@ -13,7 +25,7 @@ export const DELETE = requireAdmin(async (request: NextRequest, { params }: { pa
       return NextResponse.json({ error: "Invalid message ID" }, { status: 400 })
     }
 
-    const contactMessages = await getCollection("contact-messages")
+    const contactMessages = await getCollection<ContactMessage>("contact-messages")
     const result = await contactMessages.deleteOne({ _id: new ObjectId(id) })
 
     if (result.deletedCount === 0) {
@@ -28,4 +40,7 @@ export const DELETE = requireAdmin(async (request: NextRequest, { params }: { pa
     console.error("Error deleting contact message:", error)
     return NextResponse.json({ error: "Failed to delete contact message" }, { status: 500 })
   }
-})
+}
+
+// ✅ Admin gate happens here
+export const DELETE = requireAdmin(handler)

@@ -199,6 +199,7 @@ export default function BuilderPage() {
       if (!token) throw new Error("No authentication token found")
 
       const res = await fetch("/api/templates", {
+        credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(tpl),

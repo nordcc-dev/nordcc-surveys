@@ -73,6 +73,7 @@ export default function AnalyticsPage() {
       if (!token) throw new Error("No authentication token found")
 
       const response = await fetch("/api/responses", {
+        credentials: "include",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",

@@ -1,8 +1,8 @@
-// app/api/templates/route.ts
-import { type NextRequest, NextResponse } from "next/server"
-import { getCollection } from "@/lib/mongodb"
-import { verifyToken } from "@/lib/auth"
+import { NextResponse } from "next/server"
 import { ObjectId, OptionalId } from "mongodb"
+import { getCollection } from "@/lib/mongodb"
+import { requireAdmin } from "@/lib/auth/requireAdmin"
+import type { APIHandler, AuthenticatedRequest } from "@/lib/auth/types"
 
 type CreateTemplateBody = {
   id: string
@@ -29,25 +29,22 @@ type InsertableTemplate = OptionalId<{
   updatedAt: Date
 }>
 
-export async function POST(request: NextRequest) {
+// ───────────────────────────────────────────────
+// POST /api/templates - Create template (Admin only)
+// ───────────────────────────────────────────────
+const postHandler: APIHandler = async (req: AuthenticatedRequest) => {
   try {
-    const headerToken = request.headers.get("authorization")?.replace("Bearer ", "")
-    const cookieToken = request.cookies.get("auth_token")?.value
-    const token = headerToken || cookieToken
-
-    if (!token) return NextResponse.json({ error: "No token provided" }, { status: 401 })
-
-    const decoded = verifyToken(token)
-    if (!decoded) return NextResponse.json({ error: "Invalid token" }, { status: 401 })
-
-    const body = (await request.json()) as Partial<CreateTemplateBody>
+    const body = (await req.json()) as Partial<CreateTemplateBody>
     const { id, name, description, category, icon, questions, settings } = body
 
     if (!id || !name || !description || !Array.isArray(questions)) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
     if (!/^[a-z0-9-]+$/.test(id)) {
-      return NextResponse.json({ error: "Template id must be kebab-case" }, { status: 400 })
+      return NextResponse.json(
+        { error: "Template id must be kebab-case" },
+        { status: 400 }
+      )
     }
 
     const templatesCol = await getCollection("templates")
@@ -65,7 +62,7 @@ export async function POST(request: NextRequest) {
       questions,
       settings: settings ?? {},
       isTemplate: true,
-      createdBy: new ObjectId(decoded.userId),
+      createdBy: new ObjectId(req.user!.userId),
       createdAt: now,
       updatedAt: now,
     }
@@ -80,21 +77,19 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET(request: NextRequest) {
+// ✅ Wrap in requireAdmin
+export const POST = requireAdmin(postHandler)
+
+// ───────────────────────────────────────────────
+// GET /api/templates - List templates (Admin only)
+// ───────────────────────────────────────────────
+const getHandler: APIHandler = async (req: AuthenticatedRequest) => {
   try {
-    const headerToken = request.headers.get("authorization")?.replace("Bearer ", "")
-    const cookieToken = request.cookies.get("auth_token")?.value
-    const token = headerToken || cookieToken
-    if (!token) return NextResponse.json({ error: "No token provided" }, { status: 401 })
-
-    const decoded = verifyToken(token)
-    if (!decoded) return NextResponse.json({ error: "Invalid token" }, { status: 401 })
-
     const templatesCol = await getCollection("templates")
 
     const query: Record<string, unknown> = {
       isTemplate: true,
-      createdBy: new ObjectId(decoded.userId),
+      createdBy: new ObjectId(req.user!.userId),
     }
 
     const templates = await templatesCol
@@ -108,3 +103,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
+
+// ✅ Wrap in requireAdmin
+export const GET = requireAdmin(getHandler)

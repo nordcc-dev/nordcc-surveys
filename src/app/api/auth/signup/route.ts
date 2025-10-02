@@ -1,61 +1,62 @@
-
-import { type NextRequest, NextResponse } from "next/server"
+// app/api/auth/signup/route.ts
+import { NextRequest, NextResponse } from "next/server"
 import { getCollection } from "@/lib/mongodb"
-import { hashPassword, generateToken } from "@/lib/auth"
+import { hashPassword } from "@/lib/auth/password-utils"
+import { generateToken, JWTPayload } from "@/lib/auth/token-utils"
 import type { User } from "@/lib/db-models"
+import { toSafeUser } from "../login/route"
 
 export async function POST(request: NextRequest) {
   try {
     const { email, password, name } = await request.json()
 
-    // Validate input
-    const emailInput = email
-    const passwordInput = password
-    const nameInput = name
-
-    if (!emailInput || !passwordInput || !nameInput) {
+    if (typeof email !== "string" || typeof password !== "string" || typeof name !== "string") {
       return NextResponse.json({ error: "Email, password, and name are required" }, { status: 400 })
     }
 
-    if (passwordInput.length < 6) {
+    if (password.length < 6) {
       return NextResponse.json({ error: "Password must be at least 6 characters long" }, { status: 400 })
     }
 
-    const users = await getCollection("users")
+    const users = await getCollection<User>("users")
 
     // Check if user already exists
-    const existingUser = await users.findOne({ email: emailInput })
+    const existingUser = await users.findOne({ email })
     if (existingUser) {
       return NextResponse.json({ error: "User with this email already exists" }, { status: 409 })
     }
 
     // Hash password and create user
-    const hashedPassword = await hashPassword(passwordInput)
+    const hashedPassword = await hashPassword(password)
     const newUser: Omit<User, "_id"> = {
-      email: emailInput,
+      email,
       password: hashedPassword,
-      name: nameInput,
-      role: "user", // EVERY NEW USER BECOMES USER NOT ADMIN
+      name,
+      role: "user",         // every new user starts as "user"
+      tokenVersion: 0,      // start at 0 so login/logout/revocation works
       createdAt: new Date(),
       updatedAt: new Date(),
     }
 
     const result = await users.insertOne(newUser)
     const user = await users.findOne({ _id: result.insertedId })
-
     if (!user) {
       return NextResponse.json({ error: "Failed to create user" }, { status: 500 })
     }
 
-    // Generate token
-    const token = generateToken(user as User)
+    // Build JWT payload in line with requireAuth
+    const payload: JWTPayload = {
+      userId: String(user._id),
+      email: user.email,
+      role: user.role,
+      tokenVersion: user.tokenVersion ?? 0,
+    }
+    const token = generateToken(payload)
 
-    // Return user data without password
-    const {  ...userWithoutPassword } = user
-    return NextResponse.json({
-      user: userWithoutPassword,
-      token,
-    })
+    // Remove password safely
+    const safeUser = toSafeUser(user)
+
+    return NextResponse.json({ user: safeUser, token })
   } catch (error) {
     console.error("Signup error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })

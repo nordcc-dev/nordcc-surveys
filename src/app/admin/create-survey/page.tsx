@@ -83,6 +83,7 @@ function CreateSurveyPage() {
         const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null
         const res = await fetch("/api/surveys/from-template", {
           method: "POST",
+          credentials: "include",
           headers: token
             ? {
               Authorization: `Bearer ${token}`,
@@ -183,12 +184,15 @@ function CreateSurveyPage() {
         // ---- Load existing surveys (optional: for duplicate tab) ----
         console.log("[CreateSurvey] Fetching /api/surveys with token?", Boolean(token))
         const surveysResponse = await fetch("/api/surveys", {
+          credentials: "include",
           headers: token
             ? {
               Authorization: `Bearer ${token}`,
               "Content-Type": "application/json",
+              credentials: "include",
             }
-            : { "Content-Type": "application/json" },
+            : { "Content-Type": "application/json", credentials: "include", },
+            
         })
 
         console.log("[CreateSurvey] /api/surveys status:", surveysResponse.status)

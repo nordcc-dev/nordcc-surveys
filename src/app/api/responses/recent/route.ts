@@ -1,9 +1,10 @@
-
+// app/api/responses/recent/route.ts
 import { NextResponse } from "next/server"
 import { getCollection } from "@/lib/mongodb"
-import { requireAdmin } from "@/lib/auth"
+import { requireAdmin } from "@/lib/auth/requireAdmin"
+import type { APIHandler } from "@/lib/auth/types"
 
-export const GET = requireAdmin(async () => {
+const handler: APIHandler = async () => {
   try {
     const responses = await getCollection("responses")
 
@@ -26,7 +27,9 @@ export const GET = requireAdmin(async () => {
             createdAt: 1,
             respondentEmail: 1,
             answersCount: { $size: { $ifNull: ["$answers", []] } },
-            surveyTitle: { $ifNull: [{ $arrayElemAt: ["$survey.title", 0] }, "Untitled Survey"] },
+            surveyTitle: {
+              $ifNull: [{ $arrayElemAt: ["$survey.title", 0] }, "Untitled Survey"],
+            },
           },
         },
       ])
@@ -37,4 +40,7 @@ export const GET = requireAdmin(async () => {
     console.error("Get recent responses error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
-})
+}
+
+// ✅ Only admins can call this
+export const GET = requireAdmin(handler)

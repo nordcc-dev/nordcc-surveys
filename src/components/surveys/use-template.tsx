@@ -45,15 +45,19 @@ const handleCreateFromTemplate = async (templateId: string, surveyName: string) 
       const token = localStorage.getItem("auth_token")
       if (!token) throw new Error("No authentication token found")
   
-      const res = await fetch("/api/surveys/from-template", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        // ⬇️ Send `title`, not `name`
-        body: JSON.stringify({ templateId, title: surveyName }),
-      })
+        const res = await fetch("/api/surveys/from-template", {
+            
+            method: "POST",
+            credentials: "include", // ✅ ensures cookies like `auth_token` are sent
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              templateId,
+              title: surveyName, // ✅ send title, not name
+            }),
+          })
+          
   
       if (!res.ok) {
         const j = await res.json().catch(() => ({}))

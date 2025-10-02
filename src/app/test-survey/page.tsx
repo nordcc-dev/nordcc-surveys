@@ -108,6 +108,7 @@ export default function TestSurveyPage() {
 
     try {
       const response = await fetch("/api/test-survey/responses", {
+        credentials: "include",
         method: "POST",
         headers: {
           "Content-Type": "application/json",

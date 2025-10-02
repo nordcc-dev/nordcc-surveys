@@ -1,7 +1,7 @@
-
 import { NextResponse } from "next/server"
 import { getCollection } from "@/lib/mongodb"
-import { requireAdmin } from "@/lib/auth"
+import { requireAdmin } from "@/lib/auth/requireAdmin"
+import type { APIHandler, AuthenticatedRequest } from "@/lib/auth/types"
 
 type QuestionType =
   | "rating"
@@ -40,30 +40,41 @@ type TemplateDoc = {
     showProgressBar: boolean
     thankYouMessage: string
   }
-  // Optional metadata
   createdAt?: Date
   updatedAt?: Date
   isTemplate?: boolean
 }
 
-export const POST = requireAdmin(async (req: Request) => {
+// ───────────────────────────────────────────────
+// POST /api/builder (Admin only)
+// ───────────────────────────────────────────────
+const handler: APIHandler = async (_req: AuthenticatedRequest) => {
   try {
-    const body = (await req.json()) as TemplateDoc
+    const body = (await _req.json()) as TemplateDoc
 
-    // Basic validation (server-side)
+    // Basic validation
     if (!body?.id || !/^[a-z0-9-]+$/.test(body.id)) {
-      return NextResponse.json({ error: "Invalid template id (use kebab-case)." }, { status: 400 })
+      return NextResponse.json(
+        { error: "Invalid template id (use kebab-case)." },
+        { status: 400 }
+      )
     }
     if (!body.name || !Array.isArray(body.questions) || body.questions.length === 0) {
-      return NextResponse.json({ error: "Name and at least one question are required." }, { status: 400 })
+      return NextResponse.json(
+        { error: "Name and at least one question are required." },
+        { status: 400 }
+      )
     }
 
-    const templates = await getCollection("templates")
+    const templates = await getCollection<TemplateDoc>("templates")
 
-    // Enforce unique id
+    // Enforce unique ID
     const existing = await templates.findOne({ id: body.id })
     if (existing) {
-      return NextResponse.json({ error: "Template ID already exists." }, { status: 409 })
+      return NextResponse.json(
+        { error: "Template ID already exists." },
+        { status: 409 }
+      )
     }
 
     const doc: TemplateDoc = {
@@ -79,4 +90,7 @@ export const POST = requireAdmin(async (req: Request) => {
     console.error("Create template error:", err)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
-})
+}
+
+// ✅ Require admin (JWT + tokenVersion + admins collection)
+export const POST = requireAdmin(handler)
