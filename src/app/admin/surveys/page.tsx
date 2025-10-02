@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Copy, ExternalLink, Calendar, Users, Trash2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import Link from "next/link"
-
+import { getCSRFToken } from "@/components/surveys/use-template"
 // shadcn Confirm dialog
 import {
   AlertDialog,
@@ -91,12 +91,13 @@ export default function AdminSurveysPage() {
 
       // Optimistic remove
       setSurveys((prev) => prev.filter((s) => s._id !== surveyId))
-
+      const csrf = getCSRFToken()
       const res = await fetch(`/api/surveys/${surveyId}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
+          "X-CSRF-Token": csrf || "",
         },
       })
 

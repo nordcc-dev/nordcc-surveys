@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
 import { Plus, Trash2, Save, ArrowLeft, Sparkles } from "lucide-react"
-
+import { getCSRFToken } from "@/components/surveys/use-template"
 import { DraftsPicker } from "@/components/surveys/builder/drafts-tray"
 import { saveDraft, loadDraft } from "@/lib/drafts"
 
@@ -197,11 +197,11 @@ export default function BuilderPage() {
 
       const token = localStorage.getItem("auth_token")
       if (!token) throw new Error("No authentication token found")
-
+      const csrf = getCSRFToken()
       const res = await fetch("/api/templates", {
         credentials: "include",
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`,  "X-CSRF-Token": csrf || "", },
         body: JSON.stringify(tpl),
       })
       if (!res.ok) {

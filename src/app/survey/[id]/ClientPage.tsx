@@ -15,6 +15,7 @@ import { useParams } from "next/navigation"
 import type { Question, SurveySettings, ResponseValue } from "@/lib/db-models"
 import { useRouter } from "next/navigation"   // ✅ import router
 import Image from "next/image"
+import { getCSRFToken } from "@/components/surveys/use-template"
 interface Survey {
   id: string
   title: string
@@ -167,10 +168,10 @@ export default function TakeSurvey() {
       responses.forEach((response) => {
         responseData[response.questionId] = response.value
       })
-
+      const csrf = getCSRFToken()
       const response = await fetch(`/api/surveys/${params.id}/responses`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf || "",},
         body: JSON.stringify({
           responses: responseData,
           startTime: new Date().toISOString(),

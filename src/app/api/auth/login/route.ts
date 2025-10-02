@@ -1,5 +1,6 @@
 // app/api/auth/login/route.ts
 import { NextRequest, NextResponse } from "next/server"
+import { randomBytes } from "crypto"
 import { getCollection } from "@/lib/mongodb"
 import { verifyPassword } from "@/lib/auth/password-utils"
 import { generateToken, JWTPayload } from "@/lib/auth/token-utils"
@@ -37,32 +38,41 @@ export async function POST(request: NextRequest) {
       tokenVersion,
     }
 
-    // Short-lived JWT (e.g., 15 minutes). Adjust if your generateToken signature differs.
-    const FIFTEEN_MIN = 60 * 15
+    const FIFTEEN_MIN = 60 * 15 // JWT exp (seconds)
     const token = generateToken(payload, FIFTEEN_MIN)
 
     const safeUser = toSafeUser(user)
 
-    // --- Set httpOnly session cookie (survives refresh, dies on browser close) ---
     const isProd = process.env.NODE_ENV === "production"
-    const res = NextResponse.json({ user: safeUser, token }) // still return token if you want to keep localStorage
-
-    res.cookies.set("auth_token", token, {
-      httpOnly: true,
-      secure: isProd,          // set true in prod; false is okay on http://localhost
-      sameSite: "strict",
-      path: "/",               // send cookie to all routes
-      // no expires/maxAge => session cookie (cleared when browser closes)
+    const res = NextResponse.json({
+      user: safeUser,
+      // returning CSRF is optional; cookie is readable by JS anyway
+      // but this can save you from parsing document.cookie on first load
+      csrfToken: undefined, // will set below
+      token,                // optional: keep during migration; can be removed when fully cookie-only
     })
 
-    // (Optional) If you truly want a readable cookie in the browser (not recommended),
-    // you could also set a non-httpOnly mirror. Prefer localStorage over this.
-    // res.cookies.set("auth_token_client", token, {
-    //   httpOnly: false,
-    //   secure: isProd,
-    //   sameSite: "strict",
-    //   path: "/",
-    // })
+    // Session auth cookie (httpOnly) — survives refresh, dies on browser close
+    res.cookies.set("auth_token", token, {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: "strict",
+      path: "/",
+      // session cookie: no expires/maxAge
+    })
+
+    // CSRF token cookie (NOT httpOnly, so client JS can read & echo in X-CSRF-Token)
+    const csrf = randomBytes(32).toString("hex")
+    res.cookies.set("csrf_token", csrf, {
+      httpOnly: false,       // must be readable by JS
+      secure: isProd,
+      sameSite: "strict",
+      path: "/",
+      // session cookie as well
+    })
+
+    // Optionally include csrf in the JSON response to avoid reading document.cookie
+    
 
     return res
   } catch (err) {

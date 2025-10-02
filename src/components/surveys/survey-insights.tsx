@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Loader2, Sparkles } from "lucide-react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
-
+import { getCSRFToken } from "./use-template"
 type QuestionAnalytics = {
   questionId: string
   questionTitle: string
@@ -47,7 +47,7 @@ export function SurveyInsight({ survey }: Props) {
     try {
       setLoading(true)
       setError(null)
-
+      const csrf = getCSRFToken()
       const token = localStorage.getItem("auth_token")
       const res = await fetch("/api/analysis/survey", {
         credentials: "include",
@@ -55,6 +55,7 @@ export function SurveyInsight({ survey }: Props) {
         headers: {
           "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          "X-CSRF-Token": csrf || "",
         },
         body: JSON.stringify({
           surveyId: survey.surveyId,

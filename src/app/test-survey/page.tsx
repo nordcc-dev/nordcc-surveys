@@ -12,7 +12,7 @@ import { Progress } from "@/components/ui/progress"
 import { CheckCircle, ArrowLeft, ArrowRight } from "lucide-react"
 import { useRouter } from "next/navigation"
 import type { ResponseValue } from "@/lib/db-models"
-
+import { getCSRFToken } from "@/components/surveys/use-template"
 interface Question {
   id: string
   type: string
@@ -105,13 +105,14 @@ export default function TestSurveyPage() {
     if (!validateCurrentQuestion()) return
 
     setIsSubmitting(true)
+    const csrf = getCSRFToken()
 
     try {
       const response = await fetch("/api/test-survey/responses", {
         credentials: "include",
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
+          "Content-Type": "application/json", "X-CSRF-Token": csrf || "",
         },
         body: JSON.stringify({
           surveyId: "test-survey",

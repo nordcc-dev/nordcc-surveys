@@ -10,6 +10,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Mail,  MapPin, CheckCircle, AlertCircle } from "lucide-react"
+import { getCSRFToken } from "@/components/surveys/use-template"
+
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -33,6 +35,7 @@ export default function ContactPage() {
     setIsSubmitting(true)
     setSubmitStatus(null)
     setErrorMessage("")
+    const csrf = getCSRFToken()
 
     try {
       const response = await fetch("/api/contact", {
@@ -40,6 +43,7 @@ export default function ContactPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "X-CSRF-Token": csrf || "",
         },
         body: JSON.stringify(formData),
       })

@@ -10,7 +10,7 @@ import { useAuth } from "@/components/auth/auth-provider"
 import { ArrowLeft, Search, Plus } from "lucide-react"
 import Link from "next/link"
 import type { Question, SurveySettings } from "@/lib/db-models"
-
+import { getCSRFToken } from "@/components/surveys/use-template"
 interface Template {
   id: string
   name: string
@@ -77,7 +77,7 @@ export default function TemplatesPage() {
       router.push("/auth/login")
       return
     }
-
+    const csrf = getCSRFToken()
     setCreating(templateId)
     try {
       const response = await fetch("/api/surveys/from-template", {
@@ -86,7 +86,8 @@ export default function TemplatesPage() {
         credentials: "include", // send cookies like auth_token
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`, // still sending old header
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          "X-CSRF-Token": csrf || "", // still sending old header
         },
         body: JSON.stringify({
           templateId,

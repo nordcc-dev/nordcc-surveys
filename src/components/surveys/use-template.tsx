@@ -30,6 +30,12 @@ type UseTemplateButtonProps = {
     defaultName?: string // e.g. template.name
     className?: string
 }
+export function getCSRFToken(): string | null {
+    const match = document.cookie.match(/(^| )csrf_token=([^;]+)/)
+    return match ? decodeURIComponent(match[2]) : null
+  }
+
+ 
 
 export function UseTemplateButton({ templateId, defaultName, className }: UseTemplateButtonProps) {
     const [open, setOpen] = useState(false)
@@ -44,13 +50,15 @@ const handleCreateFromTemplate = async (templateId: string, surveyName: string) 
     try {
       const token = localStorage.getItem("auth_token")
       if (!token) throw new Error("No authentication token found")
-  
+        const csrf = getCSRFToken()
         const res = await fetch("/api/surveys/from-template", {
             
             method: "POST",
             credentials: "include", // ✅ ensures cookies like `auth_token` are sent
             headers: {
               "Content-Type": "application/json",
+              "X-CSRF-Token": csrf || "",
+             
             },
             body: JSON.stringify({
               templateId,

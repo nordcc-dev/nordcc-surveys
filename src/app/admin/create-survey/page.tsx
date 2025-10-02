@@ -11,7 +11,7 @@ import { Plus, Search, FileText, Users, Clock, ArrowRight, Layout, Copy, Databas
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { UseTemplateButton } from "@/components/surveys/use-template"
-
+import { getCSRFToken } from "@/components/surveys/use-template"
 interface Template {
   id: string
   title: string
@@ -79,6 +79,7 @@ function CreateSurveyPage() {
     async (dbId: string, defaultTitle?: string): Promise<void> => {
       try {
         console.log("[CreateSurvey] createSurveyFromTemplate →", { dbId, defaultTitle })
+        const csrf = getCSRFToken()
 
         const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null
         const res = await fetch("/api/surveys/from-template", {
@@ -88,6 +89,7 @@ function CreateSurveyPage() {
             ? {
               Authorization: `Bearer ${token}`,
               "Content-Type": "application/json",
+              "X-CSRF-Token": csrf || "",
             }
             : { "Content-Type": "application/json" },
           body: JSON.stringify({ templateId: dbId, title: defaultTitle }),

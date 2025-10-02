@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { createContext, useContext, useEffect, useState } from "react"
-
+import { getCSRFToken } from "../surveys/use-template"
 interface User {
   _id: string
   name: string
@@ -57,8 +57,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoading(false)
     }
-  }
-
+  } 
+  const csrf = getCSRFToken()
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
       const response = await fetch("/api/auth/login", {
@@ -66,6 +66,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "X-CSRF-Token": csrf || "",
         },
         body: JSON.stringify({ email, password }),
       })
@@ -93,6 +94,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "X-CSRF-Token": csrf || "",
         },
         body: JSON.stringify({ email, password, name }),
       })

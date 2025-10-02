@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { RecentActivityCard } from "@/components/admin/recent-activity-card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-
+import { getCSRFToken } from "@/components/surveys/use-template"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -65,7 +65,7 @@ function AdminDashboard() {
     try {
       
 
-      const response = await fetch("/api/admin/surveys", {
+      const response = await fetch("/api/surveys", {
         method: "GET",
         credentials: "include", // ✅ send cookies like `auth_token`
         headers: {
@@ -143,7 +143,7 @@ function AdminDashboard() {
       setLoadingMessages(false)
     }
   }
-
+  const csrf = getCSRFToken()
   const handleDeleteMessage = async (messageId: string) => {
     try {
       const token = localStorage.getItem("auth_token")
@@ -153,6 +153,8 @@ function AdminDashboard() {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
+          "X-CSRF-Token": csrf || "",
+          
         },
       })
 
