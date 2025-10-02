@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
 import { Plus, Trash2, Save, ArrowLeft, Sparkles } from "lucide-react"
-import { getCSRFToken } from "@/components/surveys/use-template"
+import { getCSRFToken } from "@/lib/CSFRToken"
 import { DraftsPicker } from "@/components/surveys/builder/drafts-tray"
 import { saveDraft, loadDraft } from "@/lib/drafts"
 

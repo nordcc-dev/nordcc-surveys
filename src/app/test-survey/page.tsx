@@ -12,7 +12,7 @@ import { Progress } from "@/components/ui/progress"
 import { CheckCircle, ArrowLeft, ArrowRight } from "lucide-react"
 import { useRouter } from "next/navigation"
 import type { ResponseValue } from "@/lib/db-models"
-import { getCSRFToken } from "@/components/surveys/use-template"
+import { getCSRFToken } from "@/lib/CSFRToken"
 interface Question {
   id: string
   type: string

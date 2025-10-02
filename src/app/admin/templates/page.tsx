@@ -10,7 +10,7 @@ import { useAuth } from "@/components/auth/auth-provider"
 import { ArrowLeft, Search, Plus } from "lucide-react"
 import Link from "next/link"
 import type { Question, SurveySettings } from "@/lib/db-models"
-import { getCSRFToken } from "@/components/surveys/use-template"
+import { getCSRFToken } from "@/lib/CSFRToken"
 interface Template {
   id: string
   name: string

@@ -6,7 +6,9 @@ import { Button } from "@/components/ui/button"
 import { Loader2, Sparkles } from "lucide-react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
-import { getCSRFToken } from "./use-template"
+import { getCSRFToken } from "@/lib/CSFRToken"
+
+
 type QuestionAnalytics = {
   questionId: string
   questionTitle: string

@@ -15,7 +15,7 @@ import { useParams } from "next/navigation"
 import type { Question, SurveySettings, ResponseValue } from "@/lib/db-models"
 import { useRouter } from "next/navigation"   // ✅ import router
 import Image from "next/image"
-import { getCSRFToken } from "@/components/surveys/use-template"
+import { getCSRFToken } from "@/lib/CSFRToken"
 interface Survey {
   id: string
   title: string

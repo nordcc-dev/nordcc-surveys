@@ -11,7 +11,7 @@ import { Plus, Search, FileText, Users, Clock, ArrowRight, Layout, Copy, Databas
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { UseTemplateButton } from "@/components/surveys/use-template"
-import { getCSRFToken } from "@/components/surveys/use-template"
+import { getCSRFToken } from "@/lib/CSFRToken"
 interface Template {
   id: string
   title: string

@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Copy, ExternalLink, Calendar, Users, Trash2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import Link from "next/link"
-import { getCSRFToken } from "@/components/surveys/use-template"
+import { getCSRFToken } from "@/lib/CSFRToken"
 // shadcn Confirm dialog
 import {
   AlertDialog,

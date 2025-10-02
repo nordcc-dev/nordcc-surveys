@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-
+import { getCSRFToken } from "@/lib/CSFRToken"
 // keep your imports...
 import { useRouter } from "next/navigation"
 
@@ -30,10 +30,7 @@ type UseTemplateButtonProps = {
     defaultName?: string // e.g. template.name
     className?: string
 }
-export function getCSRFToken(): string | null {
-    const match = document.cookie.match(/(^| )csrf_token=([^;]+)/)
-    return match ? decodeURIComponent(match[2]) : null
-  }
+
 
  
 

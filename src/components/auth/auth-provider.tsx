@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { createContext, useContext, useEffect, useState } from "react"
-import { getCSRFToken } from "../surveys/use-template"
+import { getCSRFToken } from "@/lib/CSFRToken"
 interface User {
   _id: string
   name: string

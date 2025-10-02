@@ -10,8 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Mail,  MapPin, CheckCircle, AlertCircle } from "lucide-react"
-import { getCSRFToken } from "@/components/surveys/use-template"
-
+import { getCSRFToken } from "@/lib/CSFRToken"
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
